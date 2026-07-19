@@ -56,12 +56,10 @@ function createWindow(core: ReturnType<typeof buildCore>): void {
   }
 }
 
-// Em desenvolvimento (app nao empacotado), desabilita o sandbox do Chromium.
-// Evita o erro do chrome-sandbox (setuid) no Linux sem precisar de sudo.
-// Em producao (empacotado) o sandbox permanece ATIVO.
-if (!app.isPackaged) {
-  app.commandLine.appendSwitch('no-sandbox')
-}
+// Obs: em dev, o --no-sandbox e passado como argumento real de lancamento
+// pelos scripts npm (electron-vite ... -- --no-sandbox), o que evita o erro
+// do chrome-sandbox (setuid) no Linux sem precisar de sudo. Em producao
+// (AppImage empacotado pelo electron-builder) o sandbox permanece ATIVO.
 
 app.whenReady().then(async () => {
   const core = buildCore()
