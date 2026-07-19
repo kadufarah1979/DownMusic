@@ -56,6 +56,13 @@ function createWindow(core: ReturnType<typeof buildCore>): void {
   }
 }
 
+// Em desenvolvimento (app nao empacotado), desabilita o sandbox do Chromium.
+// Evita o erro do chrome-sandbox (setuid) no Linux sem precisar de sudo.
+// Em producao (empacotado) o sandbox permanece ATIVO.
+if (!app.isPackaged) {
+  app.commandLine.appendSwitch('no-sandbox')
+}
+
 app.whenReady().then(async () => {
   const core = buildCore()
 
