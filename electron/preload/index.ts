@@ -30,7 +30,8 @@ const api = {
   resolve: (url: string): Promise<TrackMeta[]> => ipcRenderer.invoke(CH.resolve, url),
   search: (query: string, sourceIds: SourceId[]): Promise<SearchGroup[]> =>
     ipcRenderer.invoke(CH.search, query, sourceIds),
-  enqueue: (metas: TrackMeta[]): Promise<QueueItem[]> => ipcRenderer.invoke(CH.enqueue, metas),
+  enqueue: (metas: TrackMeta[], outputDir?: string): Promise<QueueItem[]> =>
+    ipcRenderer.invoke(CH.enqueue, metas, outputDir),
   queueList: (): Promise<QueueItem[]> => ipcRenderer.invoke(CH.queueList),
   retry: (itemId: string): Promise<void> => ipcRenderer.invoke(CH.queueRetry, itemId),
   retryFailed: (): Promise<void> => ipcRenderer.invoke(CH.queueRetryFailed),

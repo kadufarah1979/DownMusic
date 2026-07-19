@@ -65,6 +65,27 @@ describe('QueueManager.retry', () => {
   })
 })
 
+describe('QueueManager.enqueue com pasta de destino (override por lista)', () => {
+  it('usa a pasta do override quando informada; senao usa a config', async () => {
+    const dirs: string[] = []
+    const source = {
+      id: 'youtube' as const, matches: () => false, search: async () => [], resolve: async () => [],
+      fetchAudio: async (_m: any, opts: any) => { dirs.push(opts.outputDir); return { rawPath: '/r' } }
+    }
+    const resolver = { getSource: () => source } as any
+    const tagger = { finalize: async () => '/out.mp3' } as any
+    const cfg = { ...DEFAULT_CONFIG, concurrency: 1, maxRetries: 0, outputDir: '/padrao' }
+    const q = new QueueManager(resolver, tagger, cfg)
+
+    const a = q.enqueue(track('a'), '/pasta/escolhida')
+    await waitFor(q, a.itemId, 'done')
+    const b = q.enqueue(track('b')) // sem override
+    await waitFor(q, b.itemId, 'done')
+
+    expect(dirs).toEqual(['/pasta/escolhida', '/padrao'])
+  })
+})
+
 describe('QueueManager.retryFailed', () => {
   it('retenta todos os itens com erro', async () => {
     let ok = false

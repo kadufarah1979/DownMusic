@@ -11,6 +11,7 @@ import type { AppConfig, FetchOptions, QueueItem, TrackMeta } from '../../shared
 export class QueueManager extends EventEmitter {
   private queue: PQueue
   private items = new Map<string, QueueItem>()
+  private outputDirs = new Map<string, string>() // override de pasta por item (por lista)
   private seq = 0
 
   constructor(
@@ -31,11 +32,12 @@ export class QueueManager extends EventEmitter {
     return [...this.items.values()]
   }
 
-  /** Enfileira uma faixa ja resolvida. */
-  enqueue(meta: TrackMeta): QueueItem {
+  /** Enfileira uma faixa ja resolvida. `outputDir` sobrepoe a pasta padrao (por lista). */
+  enqueue(meta: TrackMeta, outputDir?: string): QueueItem {
     const itemId = `q${++this.seq}`
     const item: QueueItem = { itemId, meta, state: 'queued', progress: 0 }
     this.items.set(itemId, item)
+    if (outputDir) this.outputDirs.set(itemId, outputDir)
     this.emitUpdate(item)
     void this.queue.add(() => this.run(item))
     return item
@@ -56,11 +58,11 @@ export class QueueManager extends EventEmitter {
     }
   }
 
-  private fetchOptions(): FetchOptions {
+  private fetchOptions(item: QueueItem): FetchOptions {
     return {
       format: this.cfg.format,
       quality: this.cfg.quality,
-      outputDir: this.cfg.outputDir,
+      outputDir: this.outputDirs.get(item.itemId) ?? this.cfg.outputDir,
       nameTemplate: this.cfg.nameTemplate
     }
   }
@@ -72,10 +74,9 @@ export class QueueManager extends EventEmitter {
     for (let attempt = 0; attempt <= this.cfg.maxRetries; attempt++) {
       try {
         this.patch(item, { state: 'running', progress: 0, error: undefined })
-        const raw = await source.fetchAudio(item.meta, this.fetchOptions(), (p) =>
-          this.patch(item, { progress: p })
-        )
-        const outputPath = await this.tagger.finalize(item.meta, raw, this.fetchOptions())
+        const opts = this.fetchOptions(item)
+        const raw = await source.fetchAudio(item.meta, opts, (p) => this.patch(item, { progress: p }))
+        const outputPath = await this.tagger.finalize(item.meta, raw, opts)
         this.patch(item, { state: 'done', progress: 100, outputPath })
         return
       } catch (err) {

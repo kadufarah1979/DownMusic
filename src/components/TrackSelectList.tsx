@@ -15,11 +15,13 @@ const keyOf = (t: TrackMeta) => `${t.sourceId}:${t.id}`
 export function TrackSelectList({
   tracks,
   onEnqueued,
-  isDownloaded
+  isDownloaded,
+  outputDir
 }: {
   tracks: TrackMeta[]
   onEnqueued?: () => void
   isDownloaded?: (t: TrackMeta) => boolean
+  outputDir?: string
 }) {
   const [selected, setSelected] = useState<Set<string>>(() => new Set(tracks.map(keyOf)))
   const [query, setQuery] = useState('')
@@ -56,7 +58,7 @@ export function TrackSelectList({
 
   async function enqueueSelected() {
     if (visibleSelected.length === 0) return
-    await api.enqueue(visibleSelected)
+    await api.enqueue(visibleSelected, outputDir)
     onEnqueued?.()
   }
 

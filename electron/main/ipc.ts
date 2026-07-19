@@ -47,7 +47,9 @@ export function registerIpc(
   ipcMain.handle(CH.search, (_e, query: string, sourceIds: string[]) =>
     resolver.searchMany(query, sourceIds as any)
   )
-  ipcMain.handle(CH.enqueue, (_e, metas) => metas.map((m: any) => queue.enqueue(m)))
+  ipcMain.handle(CH.enqueue, (_e, metas, outputDir?: string) =>
+    metas.map((m: any) => queue.enqueue(m, outputDir))
+  )
   ipcMain.handle(CH.queueList, () => queue.list())
   ipcMain.handle(CH.queueRetry, (_e, itemId: string) => queue.retry(itemId))
   ipcMain.handle(CH.queueRetryFailed, () => queue.retryFailed())
