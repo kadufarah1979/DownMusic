@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Resolver } from './resolver'
-import { renderTemplate } from './tagger'
+import { renderTemplate, outputExtension } from './tagger'
 import type { Source } from '../sources/types'
 import type { TrackMeta } from '../../shared/types'
 
@@ -53,5 +53,17 @@ describe('renderTemplate', () => {
   it('sanitiza caracteres invalidos de caminho', () => {
     const dirty = { ...meta, title: 'a/b:c' }
     expect(renderTemplate('%title%', dirty)).toBe('a_b_c')
+  })
+})
+
+describe('outputExtension', () => {
+  it('usa o formato quando nao e best', () => {
+    expect(outputExtension('mp3', '/tmp/1.webm')).toBe('mp3')
+    expect(outputExtension('flac', '/tmp/1.opus')).toBe('flac')
+  })
+
+  it('mantem a extensao de origem quando formato e best', () => {
+    expect(outputExtension('best', '/tmp/1.webm')).toBe('webm')
+    expect(outputExtension('best', '/tmp/1.m4a')).toBe('m4a')
   })
 })

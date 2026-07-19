@@ -1,6 +1,7 @@
-import { join } from 'node:path'
+import { join, dirname, extname } from 'node:path'
+import { mkdir } from 'node:fs/promises'
 import type { FfmpegEngine } from '../engines/ffmpeg'
-import type { AudioResult, FetchOptions, TrackMeta } from '../../shared/types'
+import type { AudioFormat, AudioResult, FetchOptions, TrackMeta } from '../../shared/types'
 
 /**
  * Converte o audio bruto para o formato-alvo, embute tags/capa
@@ -11,12 +12,18 @@ export class Tagger {
 
   async finalize(meta: TrackMeta, raw: AudioResult, opts: FetchOptions): Promise<string> {
     const rel = renderTemplate(opts.nameTemplate, meta)
-    const ext = opts.format === 'best' ? 'm4a' : opts.format
+    const ext = outputExtension(opts.format, raw.rawPath)
     const outPath = join(opts.outputDir, `${rel}.${ext}`)
-    // TODO: criar diretorios intermediarios antes de gravar.
+    await mkdir(dirname(outPath), { recursive: true })
     await this.ffmpeg.convertAndTag(raw.rawPath, outPath, opts.format, opts.quality, meta)
     return outPath
   }
+}
+
+/** Extensao do arquivo final: o formato escolhido, ou (para 'best') a de origem. */
+export function outputExtension(format: AudioFormat, rawPath: string): string {
+  if (format !== 'best') return format
+  return extname(rawPath).replace(/^\./, '') || 'm4a'
 }
 
 /** Expande placeholders do template com dados da faixa. */
