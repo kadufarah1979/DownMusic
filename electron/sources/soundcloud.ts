@@ -1,6 +1,7 @@
 import type { Source, ProgressFn } from './types'
 import type { TrackMeta, FetchOptions, AudioResult } from '../../shared/types'
 import type { YtDlpEngine } from '../engines/ytdlp'
+import { ytdlpInfoToTrack } from './ytdlpMap'
 import { join } from 'node:path'
 
 /** Fonte SoundCloud: resolve e baixa via yt-dlp (suporte nativo do yt-dlp). */
@@ -19,8 +20,8 @@ export class SoundCloudSource implements Source {
   }
 
   async resolve(url: string): Promise<TrackMeta[]> {
-    // TODO: `yt-dlp --dump-json` (expandir sets/playlists).
-    return [{ id: url, title: 'TODO', artists: [], sourceId: this.id, sourceUrl: url }]
+    const infos = await this.ytdlp.dumpJson(url)
+    return infos.map((info) => ytdlpInfoToTrack(info, this.id))
   }
 
   async fetchAudio(track: TrackMeta, opts: FetchOptions, onProgress: ProgressFn): Promise<AudioResult> {

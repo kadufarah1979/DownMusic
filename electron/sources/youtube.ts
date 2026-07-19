@@ -1,6 +1,7 @@
 import type { Source, ProgressFn } from './types'
 import type { TrackMeta, FetchOptions, AudioResult } from '../../shared/types'
 import type { YtDlpEngine } from '../engines/ytdlp'
+import { ytdlpInfoToTrack } from './ytdlpMap'
 import { join } from 'node:path'
 
 /** Fonte YouTube / YouTube Music: resolve e baixa direto via yt-dlp. */
@@ -19,16 +20,8 @@ export class YouTubeSource implements Source {
   }
 
   async resolve(url: string): Promise<TrackMeta[]> {
-    // TODO: usar `yt-dlp --dump-json` para extrair metadados (e expandir playlist).
-    return [
-      {
-        id: url,
-        title: 'TODO',
-        artists: [],
-        sourceId: this.id,
-        sourceUrl: url
-      }
-    ]
+    const infos = await this.ytdlp.dumpJson(url)
+    return infos.map((info) => ytdlpInfoToTrack(info, this.id))
   }
 
   async fetchAudio(track: TrackMeta, opts: FetchOptions, onProgress: ProgressFn): Promise<AudioResult> {

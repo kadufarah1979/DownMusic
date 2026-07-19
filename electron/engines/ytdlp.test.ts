@@ -3,6 +3,7 @@ import {
   parseProgress,
   buildDownloadArgs,
   buildSearchArgs,
+  buildInfoArgs,
   parseLastLine,
   YtDlpEngine,
   type ProcRunner
@@ -72,6 +73,16 @@ describe('parseLastLine', () => {
   })
 })
 
+describe('buildInfoArgs', () => {
+  const args = buildInfoArgs('https://youtu.be/abc')
+
+  it('extrai metadados em JSON sem baixar', () => {
+    expect(args).toContain('--dump-json')
+    expect(args).toContain('--no-download')
+    expect(args[args.length - 1]).toBe('https://youtu.be/abc')
+  })
+})
+
 /** Runner falso: emite linhas pre-definidas e devolve stdout/exitCode controlados. */
 function fakeRunner(opts: { lines?: string[]; stdout?: string; throws?: boolean }): ProcRunner {
   return {
@@ -119,6 +130,25 @@ describe('YtDlpEngine.searchBest', () => {
     const runner = fakeRunner({ stdout: '' })
     const engine = new YtDlpEngine('yt-dlp', runner)
     expect(await engine.searchBest('asdkjhaskjdh')).toBeNull()
+  })
+})
+
+describe('YtDlpEngine.dumpJson', () => {
+  it('faz parse de multiplas linhas JSON (playlist)', async () => {
+    const runner = fakeRunner({
+      stdout: '{"id":"a","title":"A"}\n{"id":"b","title":"B"}\n'
+    })
+    const engine = new YtDlpEngine('yt-dlp', runner)
+    const infos = await engine.dumpJson('https://youtube.com/playlist?list=1')
+    expect(infos).toHaveLength(2)
+    expect(infos[0]).toMatchObject({ id: 'a' })
+    expect(infos[1]).toMatchObject({ id: 'b' })
+  })
+
+  it('ignora linhas em branco', async () => {
+    const runner = fakeRunner({ stdout: '\n{"id":"a"}\n\n' })
+    const engine = new YtDlpEngine('yt-dlp', runner)
+    expect(await engine.dumpJson('x')).toHaveLength(1)
   })
 })
 

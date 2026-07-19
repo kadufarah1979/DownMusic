@@ -61,6 +61,11 @@ export function buildSearchArgs(query: string): string[] {
   return [`ytsearch1:${query}`, '--no-download', '--print', 'webpage_url']
 }
 
+/** Monta os argumentos para extrair metadados (JSON) sem baixar. */
+export function buildInfoArgs(url: string): string[] {
+  return ['--dump-json', '--no-download', '--no-warnings', url]
+}
+
 /** Retorna a ultima linha nao vazia (sem espacos) de uma saida, ou null. */
 export function parseLastLine(stdout: string): string | null {
   const lines = stdout
@@ -103,6 +108,19 @@ export class YtDlpEngine {
     const path = parseLastLine(stdout)
     if (!path) throw new Error('yt-dlp nao imprimiu o caminho final do arquivo baixado.')
     return path
+  }
+
+  /**
+   * Extrai metadados de uma URL sem baixar. Retorna um item por faixa
+   * (playlist/album expandem em varios objetos JSON, um por linha).
+   */
+  async dumpJson(url: string): Promise<Record<string, unknown>[]> {
+    const { stdout } = await this.runner.run(this.bin, buildInfoArgs(url), () => {})
+    return stdout
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0)
+      .map((l) => JSON.parse(l) as Record<string, unknown>)
   }
 
   /**
