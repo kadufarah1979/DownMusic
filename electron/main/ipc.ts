@@ -4,6 +4,7 @@ import type { Resolver } from './resolver'
 import type { QueueManager } from './queue'
 import type { ConfigStore } from './config'
 import type { HistoryStore } from './history'
+import type { PlaylistService } from './playlists'
 
 /**
  * Canais IPC entre renderer e main. Nomes centralizados aqui e no preload.
@@ -22,14 +23,25 @@ export const CH = {
   historyList: 'history:list',
   historyClear: 'history:clear',
   queueRetry: 'queue:retry',
-  queueRetryFailed: 'queue:retryFailed'
+  queueRetryFailed: 'queue:retryFailed',
+  playlistList: 'playlist:list',
+  playlistAdd: 'playlist:add',
+  playlistRemove: 'playlist:remove',
+  playlistSync: 'playlist:sync',
+  playlistSyncAll: 'playlist:syncAll'
 } as const
 
 export function registerIpc(
   win: BrowserWindow,
-  deps: { resolver: Resolver; queue: QueueManager; config: ConfigStore; history: HistoryStore }
+  deps: {
+    resolver: Resolver
+    queue: QueueManager
+    config: ConfigStore
+    history: HistoryStore
+    playlists: PlaylistService
+  }
 ): void {
-  const { resolver, queue, config, history } = deps
+  const { resolver, queue, config, history, playlists } = deps
 
   ipcMain.handle(CH.resolve, (_e, url: string) => resolver.resolve(url))
   ipcMain.handle(CH.search, (_e, query: string, sourceIds: string[]) =>
@@ -78,6 +90,12 @@ export function registerIpc(
 
   ipcMain.handle(CH.historyList, () => history.list())
   ipcMain.handle(CH.historyClear, () => history.clear())
+
+  ipcMain.handle(CH.playlistList, () => playlists.list())
+  ipcMain.handle(CH.playlistAdd, (_e, url: string) => playlists.add(url))
+  ipcMain.handle(CH.playlistRemove, (_e, url: string) => playlists.remove(url))
+  ipcMain.handle(CH.playlistSync, (_e, url: string) => playlists.sync(url))
+  ipcMain.handle(CH.playlistSyncAll, () => playlists.syncAll())
 
   // Push de atualizacoes de progresso da fila para o renderer.
   queue.on('update', (item) => {

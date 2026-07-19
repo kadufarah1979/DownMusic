@@ -51,4 +51,9 @@ describe('ytdlpInfoToTrack', () => {
     expect(t.durationSec).toBeUndefined()
     expect(t.id).toBe('123')
   })
+
+  it('carimba playlist quando a entrada tem o campo playlist', () => {
+    expect(ytdlpInfoToTrack({ id: '1', title: 'T', playlist: 'Meu Set' }, 'youtube').playlist).toBe('Meu Set')
+    expect(ytdlpInfoToTrack({ id: '1', title: 'T' }, 'youtube').playlist).toBeUndefined()
+  })
 })

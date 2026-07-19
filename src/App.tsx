@@ -4,12 +4,13 @@ import { SearchView } from './components/SearchView'
 import { QueueList } from './components/QueueList'
 import { SettingsView } from './components/SettingsView'
 import { HistoryView } from './components/HistoryView'
+import { PlaylistsView } from './components/PlaylistsView'
 import { TrackSelectList } from './components/TrackSelectList'
 import { useDownloadedChecker } from './lib/downloaded'
 import { api } from './ipc'
 import type { TrackMeta } from '@shared/types'
 
-type Tab = 'download' | 'search' | 'settings' | 'history'
+type Tab = 'download' | 'search' | 'playlists' | 'history' | 'settings'
 
 export function App() {
   const [tab, setTab] = useState<Tab>('download')
@@ -23,6 +24,7 @@ export function App() {
         <nav className="flex gap-1">
           <TabButton active={tab === 'download'} onClick={() => setTab('download')}>Download</TabButton>
           <TabButton active={tab === 'search'} onClick={() => setTab('search')}>Busca</TabButton>
+          <TabButton active={tab === 'playlists'} onClick={() => setTab('playlists')}>Playlists</TabButton>
           <TabButton active={tab === 'history'} onClick={() => setTab('history')}>Historico</TabButton>
           <TabButton active={tab === 'settings'} onClick={() => setTab('settings')}>Configuracoes</TabButton>
         </nav>
@@ -51,6 +53,7 @@ export function App() {
           </div>
         )}
         {tab === 'search' && <SearchView />}
+        {tab === 'playlists' && <PlaylistsView />}
         {tab === 'history' && <HistoryView />}
         {tab === 'settings' && <SettingsView />}
       </main>

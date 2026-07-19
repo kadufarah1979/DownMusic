@@ -17,9 +17,10 @@ export class SoundCloudSource implements Source {
     const infos = await this.ytdlp.searchList(query, 'scsearch', 8)
     return infos.map((info) => {
       const t = ytdlpInfoToTrack(info, this.id)
-      // prefere a URL publica do SoundCloud (webpage_url), com fallback p/ url
+      // prefere a URL publica do SoundCloud (webpage_url), com fallback p/ url;
+      // busca nao carrega playlist (so o resolve de playlist carimba)
       const url = (info.webpage_url as string) ?? (info.url as string) ?? t.sourceUrl
-      return { ...t, sourceUrl: url }
+      return { ...t, sourceUrl: url, playlist: undefined }
     })
   }
 

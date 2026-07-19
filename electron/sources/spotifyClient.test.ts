@@ -174,18 +174,22 @@ describe('SpotifyClient.resolveUrl', () => {
     expect(r[0]).toMatchObject({ album: 'Disco', coverUrl: 'http://img/al.jpg' })
   })
 
-  it('playlist: mapeia items[].track (uma pagina)', async () => {
+  it('playlist: mapeia items[].track e carimba o nome da playlist (uma pagina)', async () => {
     const http = fakeHttp({
       get: {
-        '/v1/playlists/pl1/tracks': {
-          items: [{ track: { id: 'p', name: 'P', artists: [{ name: 'Y' }], duration_ms: 1 } }],
-          next: null
+        '/v1/playlists/pl1': {
+          name: 'Reggae Roots',
+          tracks: {
+            items: [{ track: { id: 'p', name: 'P', artists: [{ name: 'Y' }], duration_ms: 1 } }],
+            next: null
+          }
         }
       }
     })
     const client = new SpotifyClient(creds, http)
     const r = await client.resolveUrl('https://open.spotify.com/playlist/pl1')
     expect(r.map((t) => t.id)).toEqual(['p'])
+    expect(r[0].playlist).toBe('Reggae Roots')
   })
 
   it('playlist restrita (403) faz fallback para o embed publico (sem credenciais)', async () => {
@@ -229,9 +233,12 @@ describe('SpotifyClient.resolveUrl', () => {
   it('playlist: segue a paginacao (next) ate baixar TODAS as faixas', async () => {
     // http paginado: primeira pagina aponta next para a segunda
     const pages: Record<string, any> = {
-      'https://api.spotify.com/v1/playlists/big/tracks?limit=100': {
-        items: [{ track: { id: 'a', name: 'A', artists: [], duration_ms: 1 } }],
-        next: 'https://api.spotify.com/v1/playlists/big/tracks?offset=100&limit=100'
+      'https://api.spotify.com/v1/playlists/big': {
+        name: 'Big List',
+        tracks: {
+          items: [{ track: { id: 'a', name: 'A', artists: [], duration_ms: 1 } }],
+          next: 'https://api.spotify.com/v1/playlists/big/tracks?offset=100&limit=100'
+        }
       },
       'https://api.spotify.com/v1/playlists/big/tracks?offset=100&limit=100': {
         items: [

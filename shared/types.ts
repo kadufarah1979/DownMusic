@@ -16,6 +16,18 @@ export interface TrackMeta {
   durationSec?: number
   sourceId: SourceId
   sourceUrl: string
+  /** Nome da playlist de origem (quando a faixa veio de um resolve de playlist). */
+  playlist?: string
+}
+
+/** Uma playlist cadastrada para sincronizacao manual. */
+export interface PlaylistSubscription {
+  url: string
+  name: string
+  sourceId: SourceId
+  addedAt: string
+  lastSyncedAt?: string
+  trackCount: number
 }
 
 /** Opcoes passadas ao baixar/converter uma faixa. */

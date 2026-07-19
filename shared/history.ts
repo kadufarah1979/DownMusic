@@ -9,6 +9,8 @@ export interface HistoryEntry {
   /** "artistas + titulo" normalizado, para casar a mesma musica entre plataformas. */
   nameKey: string
   sourceId: SourceId
+  /** Nome da playlist de origem (quando a faixa veio de uma playlist). */
+  playlist?: string
   /** ISO 8601 de quando baixou. */
   downloadedAt: string
   /** Caminho no momento do download (pode nao existir mais). */
@@ -28,6 +30,7 @@ export function entryFromTrack(track: TrackMeta, outputPath: string, downloadedA
     isrc: track.isrc,
     nameKey: nameKey(track),
     sourceId: track.sourceId,
+    playlist: track.playlist,
     downloadedAt,
     outputPath
   }

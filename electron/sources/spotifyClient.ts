@@ -53,8 +53,10 @@ export function parseEmbedTracklist(html: string): TrackMeta[] {
   const m = /<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/.exec(html)
   if (!m) throw new Error('Nao foi possivel ler a playlist (embed sem __NEXT_DATA__).')
   const data = JSON.parse(m[1])
-  const list = data?.props?.pageProps?.state?.data?.entity?.trackList
+  const entity = data?.props?.pageProps?.state?.data?.entity
+  const list = entity?.trackList
   if (!Array.isArray(list)) throw new Error('Playlist vazia ou formato de embed inesperado.')
+  const playlist = (entity?.name ?? entity?.title) as string | undefined
   return list.map((t: { uri?: string; title?: string; subtitle?: string; duration?: number }) => {
     const id = String(t.uri ?? '').split(':').pop() || String(t.uri ?? '')
     return {
@@ -66,7 +68,8 @@ export function parseEmbedTracklist(html: string): TrackMeta[] {
         .filter(Boolean),
       durationSec: typeof t.duration === 'number' ? Math.round(t.duration / 1000) : undefined,
       sourceId: 'spotify' as const,
-      sourceUrl: `https://open.spotify.com/track/${id}`
+      sourceUrl: `https://open.spotify.com/track/${id}`,
+      playlist
     }
   })
 }
@@ -148,15 +151,18 @@ export class SpotifyClient {
       return items.map((t) => spotifyTrackToMeta({ ...t, album: { name: album.name, images: album.images } }))
     }
 
-    // playlist: tenta a Web API (rica, com ISRC); se falhar (403/404 de playlist
-    // editorial, ou sem credenciais), cai para o embed publico.
+    // playlist: tenta a Web API (rica, com ISRC + nome da playlist); se falhar
+    // (403/404 de playlist editorial, ou sem credenciais), cai para o embed publico.
     try {
       const headers = await this.authHeaders()
-      const items = await this.getAllPages(`${API}/v1/playlists/${parsed.id}/tracks?limit=100`, headers)
-      const tracks = items
+      const pl = await this.http.getJson(`${API}/v1/playlists/${parsed.id}`, headers)
+      const name = pl.name as string | undefined
+      const first = pl.tracks ?? {}
+      const rest = first.next ? await this.getAllPages(first.next, headers) : []
+      const tracks = [...(first.items ?? []), ...rest]
         .map((it: { track?: SpotifyTrack | null }) => it.track)
         .filter((t): t is SpotifyTrack => !!t)
-        .map(spotifyTrackToMeta)
+        .map((t) => ({ ...spotifyTrackToMeta(t), playlist: name }))
       if (tracks.length > 0) return tracks
       // API respondeu vazio (playlist editorial as vezes retorna 200 sem faixas): tenta embed
       return await this.resolvePlaylistViaEmbed(parsed.id)

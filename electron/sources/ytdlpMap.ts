@@ -13,6 +13,7 @@ export interface YtDlpInfo {
   duration?: unknown
   webpage_url?: unknown
   original_url?: unknown
+  playlist?: unknown
 }
 
 /** Converte a info do yt-dlp em TrackMeta, com fallbacks por tipo de fonte. */
@@ -26,7 +27,8 @@ export function ytdlpInfoToTrack(info: YtDlpInfo, sourceId: SourceId): TrackMeta
     coverUrl: str(info.thumbnail),
     durationSec: typeof info.duration === 'number' ? Math.round(info.duration) : undefined,
     sourceId,
-    sourceUrl: str(info.webpage_url) ?? str(info.original_url) ?? ''
+    sourceUrl: str(info.webpage_url) ?? str(info.original_url) ?? '',
+    playlist: str(info.playlist)
   }
 }
 

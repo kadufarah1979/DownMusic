@@ -17,8 +17,9 @@ export class YouTubeSource implements Source {
     const infos = await this.ytdlp.searchList(query, 'ytsearch', 8)
     return infos.map((info) => {
       const t = ytdlpInfoToTrack(info, this.id)
-      // garante uma URL de video baixavel (entradas flat as vezes so tem o id)
-      return { ...t, sourceUrl: `https://www.youtube.com/watch?v=${t.id}` }
+      // garante uma URL de video baixavel (entradas flat as vezes so tem o id);
+      // busca nao carrega playlist (so o resolve de playlist carimba)
+      return { ...t, sourceUrl: `https://www.youtube.com/watch?v=${t.id}`, playlist: undefined }
     })
   }
 

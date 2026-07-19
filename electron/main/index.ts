@@ -6,6 +6,7 @@ import { QueueManager } from './queue'
 import { Tagger } from './tagger'
 import { registerIpc } from './ipc'
 import { HistoryStore } from './history'
+import { PlaylistStore, PlaylistService } from './playlists'
 import { YtDlpEngine } from '../engines/ytdlp'
 import { FfmpegEngine } from '../engines/ffmpeg'
 import { SpotifySource } from '../sources/spotify'
@@ -44,7 +45,9 @@ function buildCore() {
     if (item.state === 'done') history.add(item.meta, item.outputPath ?? '')
   })
 
-  return { config, resolver, queue, history, ytdlp, ffmpeg }
+  const playlists = new PlaylistService(new PlaylistStore(), resolver, history, queue)
+
+  return { config, resolver, queue, history, playlists, ytdlp, ffmpeg }
 }
 
 function createWindow(core: ReturnType<typeof buildCore>): void {

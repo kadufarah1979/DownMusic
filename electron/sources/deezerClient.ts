@@ -72,8 +72,8 @@ export class DeezerClient {
         deezerTrackToMeta({ ...t, album: { title: entity.title, cover_big: entity.cover_big } })
       )
     }
-    // playlist: cada item ja traz seu proprio album
-    return items.map(deezerTrackToMeta)
+    // playlist: cada item ja traz seu proprio album; carimba a playlist de origem
+    return items.map((t) => ({ ...deezerTrackToMeta(t), playlist: entity.title as string }))
   }
 
   /** Segue a paginacao do Deezer (campo `next`) acumulando todos os `data`. */

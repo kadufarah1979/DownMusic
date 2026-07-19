@@ -53,6 +53,7 @@ export function HistoryView() {
                   {e.title}
                 </div>
                 <div className="mt-1 text-xs text-neutral-500">
+                  {e.playlist ? `${e.playlist} · ` : ''}
                   {LABEL[e.sourceId] ?? e.sourceId} · {formatDate(e.downloadedAt)}
                 </div>
               </li>

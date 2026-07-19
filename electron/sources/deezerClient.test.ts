@@ -92,6 +92,7 @@ describe('DeezerClient.resolveUrl', () => {
   it('playlist: segue a paginacao (next) ate o fim', async () => {
     const routes: Record<string, any> = {
       'https://api.deezer.com/playlist/908622995': {
+        title: 'Minha Playlist',
         tracks: {
           data: [{ id: 1, title: 'A', duration: 1, artist: { name: 'X' }, album: { title: 'Al', cover_big: 'c' } }],
           next: 'https://api.deezer.com/playlist/908622995/tracks?index=1'
@@ -113,5 +114,6 @@ describe('DeezerClient.resolveUrl', () => {
     }
     const r = await new DeezerClient(http).resolveUrl('https://www.deezer.com/playlist/908622995')
     expect(r.map((t) => t.id)).toEqual(['1', '2'])
+    expect(r[0].playlist).toBe('Minha Playlist') // carimbo da playlist de origem
   })
 })
