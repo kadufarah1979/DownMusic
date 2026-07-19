@@ -5,6 +5,7 @@ import { Resolver } from './resolver'
 import { QueueManager } from './queue'
 import { Tagger } from './tagger'
 import { registerIpc } from './ipc'
+import { HistoryStore } from './history'
 import { YtDlpEngine } from '../engines/ytdlp'
 import { FfmpegEngine } from '../engines/ffmpeg'
 import { SpotifySource } from '../sources/spotify'
@@ -36,8 +37,14 @@ function buildCore() {
   const resolver = new Resolver(sources)
   const tagger = new Tagger(ffmpeg)
   const queue = new QueueManager(resolver, tagger, cfg)
+  const history = new HistoryStore()
 
-  return { config, resolver, queue, ytdlp, ffmpeg }
+  // registra no historico quando um download conclui
+  queue.on('update', (item) => {
+    if (item.state === 'done') history.add(item.meta, item.outputPath ?? '')
+  })
+
+  return { config, resolver, queue, history, ytdlp, ffmpeg }
 }
 
 function createWindow(core: ReturnType<typeof buildCore>): void {

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { api } from '../ipc'
 import { TrackSelectList } from './TrackSelectList'
-import type { SearchGroup, SourceId } from '@shared/types'
+import { loadDownloadedChecker } from '../lib/downloaded'
+import type { SearchGroup, SourceId, TrackMeta } from '@shared/types'
 
 /** Plataformas pesquisaveis (Bandcamp fica de fora — yt-dlp nao busca nele). */
 const PLATFORMS: { id: SourceId; label: string }[] = [
@@ -18,6 +19,7 @@ export function SearchView() {
   const [groups, setGroups] = useState<SearchGroup[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isDownloaded, setIsDownloaded] = useState<(t: TrackMeta) => boolean>(() => () => false)
 
   function toggle(id: SourceId) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -28,7 +30,9 @@ export function SearchView() {
     setBusy(true)
     setError(null)
     try {
-      setGroups(await api.search(query.trim(), selected))
+      const [g, checker] = await Promise.all([api.search(query.trim(), selected), loadDownloadedChecker()])
+      setGroups(g)
+      setIsDownloaded(() => checker)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -71,7 +75,7 @@ export function SearchView() {
         ) : (
           <div className="space-y-6">
             {groups.map((g) => (
-              <GroupSection key={g.sourceId} group={g} title={label(g.sourceId)} />
+              <GroupSection key={g.sourceId} group={g} title={label(g.sourceId)} isDownloaded={isDownloaded} />
             ))}
           </div>
         )}
@@ -80,7 +84,15 @@ export function SearchView() {
   )
 }
 
-function GroupSection({ group, title }: { group: SearchGroup; title: string }) {
+function GroupSection({
+  group,
+  title,
+  isDownloaded
+}: {
+  group: SearchGroup
+  title: string
+  isDownloaded?: (t: TrackMeta) => boolean
+}) {
   return (
     <section>
       <h2 className="mb-2 text-sm font-semibold text-neutral-200">
@@ -92,7 +104,7 @@ function GroupSection({ group, title }: { group: SearchGroup; title: string }) {
       ) : group.tracks.length === 0 ? (
         <p className="text-sm text-neutral-500">Nenhum resultado.</p>
       ) : (
-        <TrackSelectList tracks={group.tracks} />
+        <TrackSelectList tracks={group.tracks} isDownloaded={isDownloaded} />
       )}
     </section>
   )

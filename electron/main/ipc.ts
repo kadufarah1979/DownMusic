@@ -3,6 +3,7 @@ import { mkdir } from 'node:fs/promises'
 import type { Resolver } from './resolver'
 import type { QueueManager } from './queue'
 import type { ConfigStore } from './config'
+import type { HistoryStore } from './history'
 
 /**
  * Canais IPC entre renderer e main. Nomes centralizados aqui e no preload.
@@ -17,14 +18,16 @@ export const CH = {
   configUpdate: 'config:update',
   pickFolder: 'dialog:pickFolder',
   openFolder: 'shell:openFolder',
-  openExternal: 'shell:openExternal'
+  openExternal: 'shell:openExternal',
+  historyList: 'history:list',
+  historyClear: 'history:clear'
 } as const
 
 export function registerIpc(
   win: BrowserWindow,
-  deps: { resolver: Resolver; queue: QueueManager; config: ConfigStore }
+  deps: { resolver: Resolver; queue: QueueManager; config: ConfigStore; history: HistoryStore }
 ): void {
-  const { resolver, queue, config } = deps
+  const { resolver, queue, config, history } = deps
 
   ipcMain.handle(CH.resolve, (_e, url: string) => resolver.resolve(url))
   ipcMain.handle(CH.search, (_e, query: string, sourceIds: string[]) =>
@@ -68,6 +71,9 @@ export function registerIpc(
     await shell.openExternal(url)
     return ''
   })
+
+  ipcMain.handle(CH.historyList, () => history.list())
+  ipcMain.handle(CH.historyClear, () => history.clear())
 
   // Push de atualizacoes de progresso da fila para o renderer.
   queue.on('update', (item) => {

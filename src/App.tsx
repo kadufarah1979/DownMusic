@@ -1,17 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { UrlBar } from './components/UrlBar'
 import { SearchView } from './components/SearchView'
 import { QueueList } from './components/QueueList'
 import { SettingsView } from './components/SettingsView'
+import { HistoryView } from './components/HistoryView'
 import { TrackSelectList } from './components/TrackSelectList'
+import { loadDownloadedChecker } from './lib/downloaded'
 import { api } from './ipc'
 import type { TrackMeta } from '@shared/types'
 
-type Tab = 'download' | 'search' | 'settings'
+type Tab = 'download' | 'search' | 'settings' | 'history'
 
 export function App() {
   const [tab, setTab] = useState<Tab>('download')
   const [resolved, setResolved] = useState<TrackMeta[]>([])
+  const [isDownloaded, setIsDownloaded] = useState<(t: TrackMeta) => boolean>(() => () => false)
+
+  // carrega o verificador "ja baixado?" quando ha faixas resolvidas
+  useEffect(() => {
+    if (resolved.length > 0) loadDownloadedChecker().then((fn) => setIsDownloaded(() => fn))
+  }, [resolved])
 
   return (
     <div className="flex h-screen flex-col bg-neutral-900 text-neutral-100">
@@ -20,6 +28,7 @@ export function App() {
         <nav className="flex gap-1">
           <TabButton active={tab === 'download'} onClick={() => setTab('download')}>Download</TabButton>
           <TabButton active={tab === 'search'} onClick={() => setTab('search')}>Busca</TabButton>
+          <TabButton active={tab === 'history'} onClick={() => setTab('history')}>Historico</TabButton>
           <TabButton active={tab === 'settings'} onClick={() => setTab('settings')}>Configuracoes</TabButton>
         </nav>
         <button
@@ -40,13 +49,14 @@ export function App() {
                 <p className="mb-2 text-xs text-neutral-400">
                   {resolved.length} faixa(s) resolvida(s) — desmarque o que nao quer e enfileire:
                 </p>
-                <TrackSelectList tracks={resolved} onEnqueued={() => setResolved([])} />
+                <TrackSelectList tracks={resolved} onEnqueued={() => setResolved([])} isDownloaded={isDownloaded} />
               </div>
             )}
             <QueueList />
           </div>
         )}
         {tab === 'search' && <SearchView />}
+        {tab === 'history' && <HistoryView />}
         {tab === 'settings' && <SettingsView />}
       </main>
     </div>

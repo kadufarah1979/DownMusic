@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { AppConfig, QueueItem, TrackMeta, SearchGroup, SourceId } from '../../shared/types'
+import type { HistoryEntry } from '../../shared/history'
 
 /** Nomes de canais espelhados de main/ipc.ts. */
 const CH = {
@@ -12,7 +13,9 @@ const CH = {
   configUpdate: 'config:update',
   pickFolder: 'dialog:pickFolder',
   openFolder: 'shell:openFolder',
-  openExternal: 'shell:openExternal'
+  openExternal: 'shell:openExternal',
+  historyList: 'history:list',
+  historyClear: 'history:clear'
 } as const
 
 /** API tipada exposta ao renderer via contextBridge. */
@@ -28,6 +31,8 @@ const api = {
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke(CH.pickFolder),
   openFolder: (): Promise<string> => ipcRenderer.invoke(CH.openFolder),
   openExternal: (url: string): Promise<string> => ipcRenderer.invoke(CH.openExternal, url),
+  getHistory: (): Promise<HistoryEntry[]> => ipcRenderer.invoke(CH.historyList),
+  clearHistory: (): Promise<void> => ipcRenderer.invoke(CH.historyClear),
   onQueueUpdate: (cb: (item: QueueItem) => void): (() => void) => {
     const listener = (_e: unknown, item: QueueItem) => cb(item)
     ipcRenderer.on(CH.queueUpdate, listener)

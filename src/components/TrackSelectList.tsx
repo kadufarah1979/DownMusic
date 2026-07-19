@@ -14,10 +14,12 @@ const keyOf = (t: TrackMeta) => `${t.sourceId}:${t.id}`
  */
 export function TrackSelectList({
   tracks,
-  onEnqueued
+  onEnqueued,
+  isDownloaded
 }: {
   tracks: TrackMeta[]
   onEnqueued?: () => void
+  isDownloaded?: (t: TrackMeta) => boolean
 }) {
   const [selected, setSelected] = useState<Set<string>>(() => new Set(tracks.map(keyOf)))
   const [query, setQuery] = useState('')
@@ -105,6 +107,14 @@ export function TrackSelectList({
                 {t.artists.length ? ' — ' : ''}
                 {t.title}
               </span>
+              {isDownloaded?.(t) && (
+                <span
+                  title="Voce ja baixou esta musica um dia"
+                  className="whitespace-nowrap rounded bg-emerald-900/60 px-2 py-0.5 text-xs text-emerald-300"
+                >
+                  ✓ Baixado
+                </span>
+              )}
               <button
                 onClick={() => t.sourceUrl && api.openExternal(t.sourceUrl)}
                 disabled={!t.sourceUrl}
