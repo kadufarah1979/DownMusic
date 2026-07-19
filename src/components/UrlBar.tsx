@@ -1,0 +1,46 @@
+import { useState } from 'react'
+import { api } from '../ipc'
+
+/** Cola um link, resolve as faixas e enfileira para download. */
+export function UrlBar() {
+  const [url, setUrl] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit() {
+    if (!url.trim()) return
+    setBusy(true)
+    setError(null)
+    try {
+      const tracks = await api.resolve(url.trim())
+      await api.enqueue(tracks)
+      setUrl('')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="border-b border-neutral-800 p-4">
+      <div className="flex gap-2">
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && submit()}
+          placeholder="Cole um link (Spotify, YouTube, Bandcamp, SoundCloud)"
+          className="flex-1 rounded bg-neutral-800 px-3 py-2 text-sm outline-none placeholder:text-neutral-500"
+        />
+        <button
+          onClick={submit}
+          disabled={busy}
+          className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium disabled:opacity-50"
+        >
+          {busy ? '...' : 'Baixar'}
+        </button>
+      </div>
+      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+    </div>
+  )
+}
