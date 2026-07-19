@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../ipc'
+import { queueProgress } from '@shared/queueProgress'
 import type { QueueItem } from '@shared/types'
 
 /**
@@ -23,6 +24,7 @@ export function QueueList({ compact = false }: { compact?: boolean }) {
 
   const list = Object.values(items)
   const errorCount = list.filter((i) => i.state === 'error').length
+  const prog = queueProgress(list)
   const visible = onlyErrors ? list.filter((i) => i.state === 'error') : list
 
   if (list.length === 0) {
@@ -35,25 +37,36 @@ export function QueueList({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className={`flex ${compact ? 'max-h-[45vh] shrink-0 border-t border-neutral-800' : 'flex-1'} flex-col overflow-hidden`}>
-      <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-2">
-        <div className="flex items-center gap-3 text-xs text-neutral-400">
-          <span>{list.length} na fila</span>
-          {errorCount > 0 && <span className="text-red-400">· {errorCount} com erro</span>}
+      <div className="border-b border-neutral-800 px-4 py-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 text-xs text-neutral-400">
+            <span className="text-neutral-200">
+              {prog.finished ? 'Concluido' : 'Baixando'} {prog.done}/{prog.total}
+            </span>
+            {errorCount > 0 && <span className="text-red-400">· {errorCount} com erro</span>}
+            {errorCount > 0 && (
+              <label className="flex cursor-pointer items-center gap-1.5">
+                <input type="checkbox" checked={onlyErrors} onChange={() => setOnlyErrors((v) => !v)} />
+                Só com erro
+              </label>
+            )}
+          </div>
           {errorCount > 0 && (
-            <label className="flex cursor-pointer items-center gap-1.5">
-              <input type="checkbox" checked={onlyErrors} onChange={() => setOnlyErrors((v) => !v)} />
-              Só com erro
-            </label>
+            <button
+              onClick={() => api.retryFailed()}
+              className="rounded bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600"
+            >
+              ↻ Tentar novamente ({errorCount})
+            </button>
           )}
         </div>
-        {errorCount > 0 && (
-          <button
-            onClick={() => api.retryFailed()}
-            className="rounded bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600"
-          >
-            ↻ Tentar novamente ({errorCount})
-          </button>
-        )}
+        {/* barra de progresso geral */}
+        <div className="mt-2 h-1.5 w-full rounded bg-neutral-700">
+          <div
+            className={`h-1.5 rounded transition-all ${errorCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+            style={{ width: `${prog.pct}%` }}
+          />
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
