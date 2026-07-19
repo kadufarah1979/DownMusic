@@ -72,6 +72,8 @@ export interface AppConfig {
   quality: AudioQuality
   concurrency: number
   maxRetries: number
+  /** Sincronizar as playlists cadastradas automaticamente ao abrir o app. */
+  syncOnStartup: boolean
   spotify: {
     clientId?: string
     clientSecret?: string
@@ -85,5 +87,6 @@ export const DEFAULT_CONFIG: AppConfig = {
   quality: '320',
   concurrency: 3,
   maxRetries: 2,
+  syncOnStartup: false,
   spotify: {}
 }

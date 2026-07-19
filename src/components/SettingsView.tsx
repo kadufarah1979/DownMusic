@@ -97,6 +97,15 @@ export function SettingsView() {
           />
         </Field>
 
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-neutral-300">
+          <input
+            type="checkbox"
+            checked={cfg.syncOnStartup}
+            onChange={(e) => set('syncOnStartup', e.target.checked)}
+          />
+          Sincronizar playlists ao abrir o app
+        </label>
+
         <fieldset className="rounded border border-neutral-800 p-3">
           <legend className="px-1 text-sm text-neutral-400">Credenciais Spotify (metadados)</legend>
           <div className="space-y-2">

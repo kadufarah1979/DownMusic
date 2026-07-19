@@ -83,6 +83,13 @@ app.whenReady().then(async () => {
 
   createWindow(core)
 
+  // sincroniza as playlists cadastradas ao abrir, se o usuario ativou (nao bloqueia a UI)
+  if (core.config.get().syncOnStartup) {
+    core.playlists.syncAll().catch(() => {
+      /* falha de rede/playlist e ignorada; itens problematicos caem no fluxo normal da fila */
+    })
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow(core)
   })
