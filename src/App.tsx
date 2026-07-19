@@ -4,6 +4,7 @@ import { SearchView } from './components/SearchView'
 import { QueueList } from './components/QueueList'
 import { SettingsView } from './components/SettingsView'
 import { TrackSelectList } from './components/TrackSelectList'
+import { api } from './ipc'
 import type { TrackMeta } from '@shared/types'
 
 type Tab = 'download' | 'search' | 'settings'
@@ -21,6 +22,13 @@ export function App() {
           <TabButton active={tab === 'search'} onClick={() => setTab('search')}>Busca</TabButton>
           <TabButton active={tab === 'settings'} onClick={() => setTab('settings')}>Configuracoes</TabButton>
         </nav>
+        <button
+          onClick={() => api.openFolder()}
+          className="ml-auto rounded bg-neutral-800 px-3 py-1 text-sm hover:bg-neutral-700"
+          title="Abrir a pasta de downloads no gerenciador de arquivos"
+        >
+          Abrir pasta
+        </button>
       </header>
 
       <main className="flex flex-1 flex-col overflow-hidden">

@@ -1,4 +1,5 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { ipcMain, dialog, shell, BrowserWindow } from 'electron'
+import { mkdir } from 'node:fs/promises'
 import type { Resolver } from './resolver'
 import type { QueueManager } from './queue'
 import type { ConfigStore } from './config'
@@ -14,7 +15,8 @@ export const CH = {
   queueUpdate: 'queue:update',
   configGet: 'config:get',
   configUpdate: 'config:update',
-  pickFolder: 'dialog:pickFolder'
+  pickFolder: 'dialog:pickFolder',
+  openFolder: 'shell:openFolder'
 } as const
 
 export function registerIpc(
@@ -43,6 +45,19 @@ export function registerIpc(
       defaultPath: config.get().outputDir || undefined
     })
     return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
+  })
+
+  // Abre a pasta de downloads no gerenciador de arquivos; cria se ainda nao existe.
+  // Retorna string de erro (vazia = sucesso).
+  ipcMain.handle(CH.openFolder, async () => {
+    const dir = config.get().outputDir
+    if (!dir) return 'Pasta de destino nao configurada.'
+    try {
+      await mkdir(dir, { recursive: true })
+    } catch {
+      /* segue e tenta abrir mesmo assim */
+    }
+    return shell.openPath(dir)
   })
 
   // Push de atualizacoes de progresso da fila para o renderer.

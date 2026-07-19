@@ -10,7 +10,8 @@ const CH = {
   queueUpdate: 'queue:update',
   configGet: 'config:get',
   configUpdate: 'config:update',
-  pickFolder: 'dialog:pickFolder'
+  pickFolder: 'dialog:pickFolder',
+  openFolder: 'shell:openFolder'
 } as const
 
 /** API tipada exposta ao renderer via contextBridge. */
@@ -24,6 +25,7 @@ const api = {
   updateConfig: (patch: Partial<AppConfig>): Promise<AppConfig> =>
     ipcRenderer.invoke(CH.configUpdate, patch),
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke(CH.pickFolder),
+  openFolder: (): Promise<string> => ipcRenderer.invoke(CH.openFolder),
   onQueueUpdate: (cb: (item: QueueItem) => void): (() => void) => {
     const listener = (_e: unknown, item: QueueItem) => cb(item)
     ipcRenderer.on(CH.queueUpdate, listener)

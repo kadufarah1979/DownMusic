@@ -43,6 +43,13 @@ export function SettingsView() {
             >
               Escolher...
             </button>
+            <button
+              onClick={() => api.openFolder()}
+              disabled={!cfg.outputDir}
+              className="whitespace-nowrap rounded bg-neutral-700 px-3 py-2 text-sm hover:bg-neutral-600 disabled:opacity-40"
+            >
+              Abrir pasta
+            </button>
           </div>
         </Field>
 
