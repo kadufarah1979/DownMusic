@@ -62,6 +62,8 @@ export function TrackSelectList({
 
   return (
     <div>
+      {/* controles fixos no topo ao rolar listas longas */}
+      <div className="sticky top-0 z-10 bg-neutral-900 pb-2">
       <div className="mb-2 flex items-center gap-2">
         <div className="relative flex-1">
           <input
@@ -89,11 +91,12 @@ export function TrackSelectList({
         </button>
       </div>
 
-      <label className="mb-2 flex w-fit cursor-pointer items-center gap-2 text-xs text-neutral-400">
+      <label className="flex w-fit cursor-pointer items-center gap-2 text-xs text-neutral-400">
         <input type="checkbox" checked={allVisibleChecked} onChange={toggleAllVisible} />
         {allVisibleChecked ? 'Desmarcar todas' : 'Marcar todas'}
         {query && <span className="text-neutral-500">(visíveis: {visible.length})</span>}
       </label>
+      </div>
 
       {visible.length === 0 ? (
         <p className="text-sm text-neutral-500">Nenhuma faixa corresponde ao filtro.</p>

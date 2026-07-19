@@ -42,11 +42,13 @@ export function App() {
           <div className="flex flex-1 flex-col overflow-hidden">
             <UrlBar onResolved={setResolved} />
             {resolved.length > 0 && (
-              <div className="border-b border-neutral-800 p-4">
-                <p className="mb-2 text-xs text-neutral-400">
+              <div className="flex min-h-0 flex-1 flex-col border-b border-neutral-800">
+                <p className="px-4 pb-2 pt-4 text-xs text-neutral-400">
                   {resolved.length} faixa(s) resolvida(s) — desmarque o que nao quer e enfileire:
                 </p>
-                <TrackSelectList tracks={resolved} onEnqueued={() => setResolved([])} isDownloaded={isDownloaded} />
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+                  <TrackSelectList tracks={resolved} onEnqueued={() => setResolved([])} isDownloaded={isDownloaded} />
+                </div>
               </div>
             )}
             <QueueList />
