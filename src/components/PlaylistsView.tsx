@@ -177,7 +177,14 @@ export function PlaylistsView() {
                       ) : 'error' in st ? (
                         <p className="text-sm text-red-400">{st.error}</p>
                       ) : (
-                        <PlaylistTracks tracks={st} isDownloaded={isDownloaded} queueStateOf={queueStateOf} />
+                        <>
+                          {s.sourceId === 'spotify' && st.length >= 100 && (
+                            <p className="mb-3 rounded border border-amber-900/50 bg-amber-950/30 p-2 text-xs text-amber-300">
+                              ⚠ O Spotify limitou esta playlist às 100 primeiras faixas.
+                            </p>
+                          )}
+                          <PlaylistTracks tracks={st} isDownloaded={isDownloaded} queueStateOf={queueStateOf} />
+                        </>
                       )}
                     </div>
                   )}
