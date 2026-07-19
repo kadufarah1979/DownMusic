@@ -6,11 +6,29 @@ export interface HttpClient {
   postForm(url: string, form: Record<string, string>, headers: Record<string, string>): Promise<any>
 }
 
+/** Le o corpo da resposta e monta uma mensagem de erro util (com o motivo do Spotify). */
+async function httpError(method: string, url: string, res: Response): Promise<Error> {
+  let detail = ''
+  try {
+    const body = await res.text()
+    // Spotify devolve JSON: {"error":"invalid_client"} ou {"error":{"message":"..."}}
+    try {
+      const j = JSON.parse(body)
+      detail = typeof j.error === 'string' ? j.error : j.error?.message ?? body
+    } catch {
+      detail = body
+    }
+  } catch {
+    /* sem corpo */
+  }
+  return new Error(`${method} ${url} -> HTTP ${res.status}${detail ? ` (${detail})` : ''}`)
+}
+
 /** Implementacao padrao sobre o fetch global (Node 18+). */
 export class FetchHttpClient implements HttpClient {
   async getJson(url: string, headers: Record<string, string>) {
     const res = await fetch(url, { headers })
-    if (!res.ok) throw new Error(`GET ${url} -> HTTP ${res.status}`)
+    if (!res.ok) throw await httpError('GET', url, res)
     return res.json()
   }
 
@@ -20,7 +38,7 @@ export class FetchHttpClient implements HttpClient {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...headers },
       body: new URLSearchParams(form).toString()
     })
-    if (!res.ok) throw new Error(`POST ${url} -> HTTP ${res.status}`)
+    if (!res.ok) throw await httpError('POST', url, res)
     return res.json()
   }
 }
