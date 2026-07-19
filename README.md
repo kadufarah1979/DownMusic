@@ -22,8 +22,11 @@ do Spotify apenas para **metadados** e baixa o audio de fontes publicas
 npm install
 npm run dev        # roda o app em modo desenvolvimento
 npm run typecheck  # checa tipos
-npm test           # testes (Vitest)
+npm test           # testes unitarios (Vitest) — pula o smoke
 npm run dist       # gera AppImage (Linux)
+
+# Smoke test real (rede + yt-dlp + ffmpeg): resolve -> download -> convert/tag
+SMOKE=1 YTDLP_BIN="$HOME/.local/bin/yt-dlp" npx vitest run electron/smoke
 ```
 
 ## Arquitetura
