@@ -51,7 +51,7 @@ export function App() {
                 </div>
               </div>
             )}
-            <QueueList />
+            <QueueList compact={resolved.length > 0} />
           </div>
         )}
         {tab === 'search' && <SearchView />}

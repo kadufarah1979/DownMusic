@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react'
 import { api } from '../ipc'
 import type { QueueItem } from '@shared/types'
 
-/** Lista os itens da fila com estado e progresso, atualizada via IPC push. */
-export function QueueList() {
+/**
+ * Lista os itens da fila com estado e progresso, atualizada via IPC push.
+ * `compact` (usado quando ha faixas resolvidas acima): a fila vira uma faixa
+ * inferior de altura limitada, para nao roubar espaco da lista resolvida.
+ */
+export function QueueList({ compact = false }: { compact?: boolean }) {
   const [items, setItems] = useState<Record<string, QueueItem>>({})
   const [onlyErrors, setOnlyErrors] = useState(false)
 
@@ -22,11 +26,15 @@ export function QueueList() {
   const visible = onlyErrors ? list.filter((i) => i.state === 'error') : list
 
   if (list.length === 0) {
-    return <div className="flex flex-1 items-center justify-center text-sm text-neutral-500">Fila vazia</div>
+    return compact ? (
+      <div className="border-t border-neutral-800 px-4 py-2 text-xs text-neutral-500">Fila vazia</div>
+    ) : (
+      <div className="flex flex-1 items-center justify-center text-sm text-neutral-500">Fila vazia</div>
+    )
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className={`flex ${compact ? 'max-h-[45vh] shrink-0 border-t border-neutral-800' : 'flex-1'} flex-col overflow-hidden`}>
       <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-2">
         <div className="flex items-center gap-3 text-xs text-neutral-400">
           <span>{list.length} na fila</span>
