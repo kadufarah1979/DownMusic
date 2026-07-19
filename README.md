@@ -29,6 +29,32 @@ npm run dist       # gera AppImage (Linux)
 SMOKE=1 YTDLP_BIN="$HOME/.local/bin/yt-dlp" npx vitest run electron/smoke
 ```
 
+## Distribuicao (AppImage)
+
+```bash
+npm run dist       # gera dist/DownMusic-<versao>.AppImage
+```
+
+Rodar o AppImage no Linux:
+
+```bash
+chmod +x dist/DownMusic-*.AppImage
+./dist/DownMusic-*.AppImage
+```
+
+Requisitos de runtime (distros recentes, ex. Ubuntu 24.04):
+
+- **libfuse2** (para montar o AppImage): `sudo apt install libfuse2`
+  — ou rode com `--appimage-extract-and-run` (nao precisa de FUSE).
+- **Sandbox do Chromium:** por padrao o Ubuntu 24.04+ restringe user
+  namespaces (AppArmor), o que quebra o sandbox. Escolha uma:
+  - manter o sandbox: `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`
+    (persistir em `/etc/sysctl.d/`); ou
+  - rodar com `--no-sandbox` (desliga o sandbox).
+- **yt-dlp e ffmpeg** precisam estar no PATH do app. O `ffmpeg` costuma
+  vir do sistema; garanta o `yt-dlp` acessivel (ex: `/usr/local/bin/yt-dlp`)
+  — ao abrir pelo gerenciador de arquivos, `~/.local/bin` pode nao estar no PATH.
+
 ## Arquitetura
 
 Ver `docs/superpowers/specs/2026-07-19-downmusic-desktop-design.md`.

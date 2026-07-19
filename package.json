@@ -5,6 +5,25 @@
   "main": "out/main/index.js",
   "author": "",
   "license": "MIT",
+  "build": {
+    "appId": "com.downmusic.app",
+    "productName": "DownMusic",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "npmRebuild": false,
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "AudioVideo"
+    }
+  },
   "scripts": {
     "dev": "electron-vite dev -- --no-sandbox",
     "build": "electron-vite build",
