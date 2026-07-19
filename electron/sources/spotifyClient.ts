@@ -69,22 +69,37 @@ const API = 'https://api.spotify.com'
  * Cliente da Web API do Spotify (client-credentials).
  * Usa a API OFICIAL apenas para metadados; o audio vem do yt-dlp (fonte).
  */
+export interface SpotifyCreds {
+  clientId?: string
+  clientSecret?: string
+}
+
 export class SpotifyClient {
   private token?: { value: string; expiresAt: number }
 
+  /**
+   * `creds` pode ser um objeto fixo OU um provider (funcao) — este ultimo
+   * permite ler as credenciais atuais da config a cada chamada, refletindo
+   * o que o usuario salvou em Configuracoes sem recriar o client.
+   */
   constructor(
-    private readonly creds: { clientId?: string; clientSecret?: string },
+    private readonly creds: SpotifyCreds | (() => SpotifyCreds),
     private readonly http: HttpClient = new FetchHttpClient(),
     private readonly now: () => number = () => Date.now()
   ) {}
 
+  private resolveCreds(): SpotifyCreds {
+    return typeof this.creds === 'function' ? this.creds() : this.creds
+  }
+
   /** Retorna um access token valido, buscando/renovando quando necessario. */
   async getToken(): Promise<string> {
     if (this.token && this.now() < this.token.expiresAt) return this.token.value
-    if (!this.creds.clientId || !this.creds.clientSecret) {
+    const creds = this.resolveCreds()
+    if (!creds.clientId || !creds.clientSecret) {
       throw new Error('Credenciais do Spotify ausentes. Configure Client ID/Secret nas Configuracoes.')
     }
-    const basic = Buffer.from(`${this.creds.clientId}:${this.creds.clientSecret}`).toString('base64')
+    const basic = Buffer.from(`${creds.clientId}:${creds.clientSecret}`).toString('base64')
     const res = await this.http.postForm(
       TOKEN_URL,
       { grant_type: 'client_credentials' },

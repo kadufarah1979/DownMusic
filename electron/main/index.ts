@@ -23,7 +23,9 @@ function buildCore() {
   const ffmpeg = new FfmpegEngine()
 
   const sources = [
-    new SpotifySource(ytdlp, new SpotifyClient(cfg.spotify)),
+    // provider dinamico: le as credenciais atuais da config a cada chamada,
+    // refletindo o que o usuario salva em Configuracoes sem reiniciar.
+    new SpotifySource(ytdlp, new SpotifyClient(() => config.get().spotify)),
     new YouTubeSource(ytdlp),
     new BandcampSource(ytdlp),
     new SoundCloudSource(ytdlp),

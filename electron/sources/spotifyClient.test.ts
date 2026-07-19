@@ -84,6 +84,16 @@ describe('SpotifyClient.getToken', () => {
     const client = new SpotifyClient({}, fakeHttp({}))
     await expect(client.getToken()).rejects.toThrow(/[Cc]redenciais/)
   })
+
+  it('le credenciais dinamicamente de um provider (config salva em runtime)', async () => {
+    // simula credenciais vazias ao construir e preenchidas depois (ao salvar nas Config)
+    let live: { clientId?: string; clientSecret?: string } = {}
+    const client = new SpotifyClient(() => live, fakeHttp({ token: { access_token: 'tk', expires_in: 3600 } }))
+
+    await expect(client.getToken()).rejects.toThrow(/[Cc]redenciais/) // ainda vazias
+    live = { clientId: 'id', clientSecret: 'secret' } // usuario salvou nas Configuracoes
+    expect(await client.getToken()).toBe('tk') // agora funciona sem recriar o client
+  })
 })
 
 describe('SpotifyClient.searchTracks', () => {
