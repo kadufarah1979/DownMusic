@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { api } from '../ipc'
-import type { PlaylistSubscription, SourceId } from '@shared/types'
+import { PlaylistTracks } from './PlaylistTracks'
+import { useDownloadedChecker } from '../lib/downloaded'
+import { useQueueStatus } from '../lib/queueStatus'
+import type { PlaylistSubscription, SourceId, TrackMeta } from '@shared/types'
 
 const LABEL: Record<SourceId, string> = {
   spotify: 'Spotify',
@@ -10,18 +13,42 @@ const LABEL: Record<SourceId, string> = {
   bandcamp: 'Bandcamp'
 }
 
-/** Aba Playlists: cadastra playlists e sincroniza (baixa so as faixas novas). */
+type TracksState = 'loading' | TrackMeta[] | { error: string }
+
+/** Aba Playlists: cadastra, sincroniza e expande para ver o status de cada faixa. */
 export function PlaylistsView() {
   const [subs, setSubs] = useState<PlaylistSubscription[]>([])
   const [url, setUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [tracks, setTracks] = useState<Record<string, TracksState>>({})
+
+  const isDownloaded = useDownloadedChecker()
+  const queueStateOf = useQueueStatus()
 
   const reload = () => api.getPlaylists().then(setSubs)
   useEffect(() => {
     reload()
   }, [])
+
+  async function toggle(sub: PlaylistSubscription) {
+    if (expanded === sub.url) {
+      setExpanded(null)
+      return
+    }
+    setExpanded(sub.url)
+    if (!tracks[sub.url] || 'error' in (tracks[sub.url] as any)) {
+      setTracks((p) => ({ ...p, [sub.url]: 'loading' }))
+      try {
+        const list = await api.resolve(sub.url)
+        setTracks((p) => ({ ...p, [sub.url]: list }))
+      } catch (e) {
+        setTracks((p) => ({ ...p, [sub.url]: { error: e instanceof Error ? e.message : String(e) } }))
+      }
+    }
+  }
 
   async function add() {
     if (!url.trim()) return
@@ -110,32 +137,53 @@ export function PlaylistsView() {
           <p className="text-sm text-neutral-500">Nenhuma playlist cadastrada. Cole um link acima.</p>
         ) : (
           <ul className="space-y-2">
-            {subs.map((s) => (
-              <li key={s.url} className="flex items-center justify-between gap-3 rounded bg-neutral-800 p-3">
-                <div className="min-w-0">
-                  <div className="truncate text-sm">{s.name}</div>
-                  <div className="mt-1 text-xs text-neutral-500">
-                    {LABEL[s.sourceId] ?? s.sourceId} · {s.trackCount} faixas
-                    {s.lastSyncedAt ? ` · sync ${formatDate(s.lastSyncedAt)}` : ' · nunca sincronizada'}
+            {subs.map((s) => {
+              const open = expanded === s.url
+              const st = tracks[s.url]
+              return (
+                <li key={s.url} className="rounded bg-neutral-800">
+                  <div className="flex items-center justify-between gap-3 p-3">
+                    <button onClick={() => toggle(s)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                      <span className="text-neutral-500">{open ? '▾' : '▸'}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm">{s.name}</span>
+                        <span className="mt-1 block text-xs text-neutral-500">
+                          {LABEL[s.sourceId] ?? s.sourceId} · {s.trackCount} faixas
+                          {s.lastSyncedAt ? ` · sync ${formatDate(s.lastSyncedAt)}` : ' · nunca sincronizada'}
+                        </span>
+                      </span>
+                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        onClick={() => sync(s)}
+                        disabled={busy}
+                        className="rounded bg-emerald-700 px-3 py-1 text-xs hover:bg-emerald-600 disabled:opacity-50"
+                      >
+                        ↻ Sincronizar
+                      </button>
+                      <button
+                        onClick={() => remove(s)}
+                        className="rounded px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-700 hover:text-red-300"
+                      >
+                        remover
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    onClick={() => sync(s)}
-                    disabled={busy}
-                    className="rounded bg-emerald-700 px-3 py-1 text-xs hover:bg-emerald-600 disabled:opacity-50"
-                  >
-                    ↻ Sincronizar
-                  </button>
-                  <button
-                    onClick={() => remove(s)}
-                    className="rounded px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-700 hover:text-red-300"
-                  >
-                    remover
-                  </button>
-                </div>
-              </li>
-            ))}
+
+                  {open && (
+                    <div className="border-t border-neutral-700 p-3">
+                      {st === 'loading' || st === undefined ? (
+                        <p className="text-sm text-neutral-500">Carregando faixas...</p>
+                      ) : 'error' in st ? (
+                        <p className="text-sm text-red-400">{st.error}</p>
+                      ) : (
+                        <PlaylistTracks tracks={st} isDownloaded={isDownloaded} queueStateOf={queueStateOf} />
+                      )}
+                    </div>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
