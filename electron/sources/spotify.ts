@@ -47,8 +47,8 @@ export class SpotifySource implements Source {
     const query = track.isrc ?? `${track.artists.join(' ')} ${track.title}`
     const ytUrl = await this.ytdlp.searchBest(query)
     if (!ytUrl) throw new Error(`Nenhum resultado no YouTube para: ${query}`)
-    const raw = join(opts.outputDir, `${track.id}.raw`)
-    const path = await this.ytdlp.downloadAudio(ytUrl, raw, onProgress)
+    const outTemplate = join(opts.outputDir, `${track.id}.%(ext)s`)
+    const path = await this.ytdlp.downloadAudio(ytUrl, outTemplate, onProgress)
     return { rawPath: path }
   }
 }

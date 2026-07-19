@@ -32,8 +32,8 @@ export class YouTubeSource implements Source {
   }
 
   async fetchAudio(track: TrackMeta, opts: FetchOptions, onProgress: ProgressFn): Promise<AudioResult> {
-    const raw = join(opts.outputDir, `${track.id}.raw`)
-    const path = await this.ytdlp.downloadAudio(track.sourceUrl, raw, onProgress)
+    const outTemplate = join(opts.outputDir, `${track.id}.%(ext)s`)
+    const path = await this.ytdlp.downloadAudio(track.sourceUrl, outTemplate, onProgress)
     return { rawPath: path }
   }
 }
