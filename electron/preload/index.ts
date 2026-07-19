@@ -11,7 +11,8 @@ const CH = {
   configGet: 'config:get',
   configUpdate: 'config:update',
   pickFolder: 'dialog:pickFolder',
-  openFolder: 'shell:openFolder'
+  openFolder: 'shell:openFolder',
+  openExternal: 'shell:openExternal'
 } as const
 
 /** API tipada exposta ao renderer via contextBridge. */
@@ -26,6 +27,7 @@ const api = {
     ipcRenderer.invoke(CH.configUpdate, patch),
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke(CH.pickFolder),
   openFolder: (): Promise<string> => ipcRenderer.invoke(CH.openFolder),
+  openExternal: (url: string): Promise<string> => ipcRenderer.invoke(CH.openExternal, url),
   onQueueUpdate: (cb: (item: QueueItem) => void): (() => void) => {
     const listener = (_e: unknown, item: QueueItem) => cb(item)
     ipcRenderer.on(CH.queueUpdate, listener)

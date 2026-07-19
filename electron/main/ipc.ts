@@ -16,7 +16,8 @@ export const CH = {
   configGet: 'config:get',
   configUpdate: 'config:update',
   pickFolder: 'dialog:pickFolder',
-  openFolder: 'shell:openFolder'
+  openFolder: 'shell:openFolder',
+  openExternal: 'shell:openExternal'
 } as const
 
 export function registerIpc(
@@ -58,6 +59,14 @@ export function registerIpc(
       /* segue e tenta abrir mesmo assim */
     }
     return shell.openPath(dir)
+  })
+
+  // Abre uma URL http(s) no navegador padrao (ex: pagina da faixa na plataforma).
+  // So aceita http/https por seguranca. Retorna string de erro (vazia = sucesso).
+  ipcMain.handle(CH.openExternal, async (_e, url: string) => {
+    if (!/^https?:\/\//i.test(url)) return 'URL invalida.'
+    await shell.openExternal(url)
+    return ''
   })
 
   // Push de atualizacoes de progresso da fila para o renderer.

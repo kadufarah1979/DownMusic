@@ -64,11 +64,19 @@ export function TrackSelectList({
         {tracks.map((t) => (
           <li key={keyOf(t)} className="flex items-center gap-3 rounded bg-neutral-800 p-3">
             <input type="checkbox" checked={selected.has(keyOf(t))} onChange={() => toggle(t)} />
-            <span className="text-sm">
+            <span className="flex-1 text-sm">
               {t.artists.join(', ')}
               {t.artists.length ? ' — ' : ''}
               {t.title}
             </span>
+            <button
+              onClick={() => t.sourceUrl && api.openExternal(t.sourceUrl)}
+              disabled={!t.sourceUrl}
+              title="Ouvir na plataforma de origem"
+              className="rounded px-2 py-1 text-sm text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100 disabled:opacity-30"
+            >
+              ↗
+            </button>
           </li>
         ))}
       </ul>
