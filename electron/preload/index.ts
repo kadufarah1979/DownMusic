@@ -22,7 +22,9 @@ const CH = {
   playlistAdd: 'playlist:add',
   playlistRemove: 'playlist:remove',
   playlistSync: 'playlist:sync',
-  playlistSyncAll: 'playlist:syncAll'
+  playlistSyncAll: 'playlist:syncAll',
+  playlistClear: 'playlist:clear',
+  downloadsClear: 'downloads:clear'
 } as const
 
 /** API tipada exposta ao renderer via contextBridge. */
@@ -49,6 +51,9 @@ const api = {
   syncPlaylist: (url: string): Promise<{ added: number; total: number }> =>
     ipcRenderer.invoke(CH.playlistSync, url),
   syncAllPlaylists: (): Promise<{ added: number; total: number }> => ipcRenderer.invoke(CH.playlistSyncAll),
+  clearPlaylists: (): Promise<void> => ipcRenderer.invoke(CH.playlistClear),
+  clearDownloads: (): Promise<{ ok: boolean; removed?: number; error?: string }> =>
+    ipcRenderer.invoke(CH.downloadsClear),
   onQueueUpdate: (cb: (item: QueueItem) => void): (() => void) => {
     const listener = (_e: unknown, item: QueueItem) => cb(item)
     ipcRenderer.on(CH.queueUpdate, listener)

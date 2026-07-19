@@ -1,5 +1,6 @@
-import { ipcMain, dialog, shell, BrowserWindow } from 'electron'
+import { ipcMain, dialog, shell, app, BrowserWindow } from 'electron'
 import { mkdir } from 'node:fs/promises'
+import { isSafeToClear, clearDir } from './reset'
 import type { Resolver } from './resolver'
 import type { QueueManager } from './queue'
 import type { ConfigStore } from './config'
@@ -28,7 +29,9 @@ export const CH = {
   playlistAdd: 'playlist:add',
   playlistRemove: 'playlist:remove',
   playlistSync: 'playlist:sync',
-  playlistSyncAll: 'playlist:syncAll'
+  playlistSyncAll: 'playlist:syncAll',
+  playlistClear: 'playlist:clear',
+  downloadsClear: 'downloads:clear'
 } as const
 
 export function registerIpc(
@@ -98,6 +101,21 @@ export function registerIpc(
   ipcMain.handle(CH.playlistRemove, (_e, url: string) => playlists.remove(url))
   ipcMain.handle(CH.playlistSync, (_e, url: string) => playlists.sync(url))
   ipcMain.handle(CH.playlistSyncAll, () => playlists.syncAll())
+  ipcMain.handle(CH.playlistClear, () => playlists.clear())
+
+  // apaga o conteudo da pasta de downloads (irreversivel), com guardas de seguranca
+  ipcMain.handle(CH.downloadsClear, async () => {
+    const dir = config.get().outputDir
+    if (!isSafeToClear(dir, app.getPath('home'))) {
+      return { ok: false, error: `Pasta invalida ou protegida: ${dir || '(vazia)'}` }
+    }
+    try {
+      const removed = await clearDir(dir)
+      return { ok: true, removed }
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) }
+    }
+  })
 
   // Push de atualizacoes de progresso da fila para o renderer.
   queue.on('update', (item) => {

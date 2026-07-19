@@ -40,6 +40,10 @@ export class PlaylistStore {
       this.list().filter((s) => s.url !== url)
     )
   }
+
+  clear(): void {
+    this.store.set('subs', [])
+  }
 }
 
 /** Resultado de uma sincronizacao. */
@@ -81,6 +85,11 @@ export class PlaylistService {
 
   remove(url: string): void {
     this.store.remove(url)
+  }
+
+  /** Remove todas as playlists cadastradas. */
+  clear(): void {
+    this.store.clear()
   }
 
   /** Sincroniza uma playlist: enfileira as faixas ainda nao baixadas. */

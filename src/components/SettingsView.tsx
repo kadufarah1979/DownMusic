@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { api } from '../ipc'
+import { ResetDialog } from './ResetDialog'
 import type { AppConfig } from '@shared/types'
 
 /** Edita config: pasta, template, formato/qualidade, concorrencia, credenciais Spotify. */
 export function SettingsView() {
   const [cfg, setCfg] = useState<AppConfig | null>(null)
   const [saved, setSaved] = useState(false)
+  const [showReset, setShowReset] = useState(false)
 
   useEffect(() => {
     api.getConfig().then(setCfg)
@@ -129,7 +131,18 @@ export function SettingsView() {
           <button onClick={save} className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium">Salvar</button>
           {saved && <span className="text-sm text-emerald-400">Salvo.</span>}
         </div>
+
+        <div className="mt-4 border-t border-neutral-800 pt-4">
+          <button
+            onClick={() => setShowReset(true)}
+            className="rounded border border-red-900/60 px-3 py-2 text-sm text-red-300 hover:bg-red-950/30"
+          >
+            Resetar / Limpar dados...
+          </button>
+        </div>
       </div>
+
+      {showReset && <ResetDialog onClose={() => setShowReset(false)} />}
     </div>
   )
 }
