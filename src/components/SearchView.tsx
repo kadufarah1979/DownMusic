@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '../ipc'
 import { TrackSelectList } from './TrackSelectList'
-import { loadDownloadedChecker } from '../lib/downloaded'
+import { useDownloadedChecker } from '../lib/downloaded'
 import type { SearchGroup, SourceId, TrackMeta } from '@shared/types'
 
 /** Plataformas pesquisaveis (Bandcamp fica de fora — yt-dlp nao busca nele). */
@@ -19,7 +19,7 @@ export function SearchView() {
   const [groups, setGroups] = useState<SearchGroup[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isDownloaded, setIsDownloaded] = useState<(t: TrackMeta) => boolean>(() => () => false)
+  const isDownloaded = useDownloadedChecker()
 
   function toggle(id: SourceId) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -30,9 +30,7 @@ export function SearchView() {
     setBusy(true)
     setError(null)
     try {
-      const [g, checker] = await Promise.all([api.search(query.trim(), selected), loadDownloadedChecker()])
-      setGroups(g)
-      setIsDownloaded(() => checker)
+      setGroups(await api.search(query.trim(), selected))
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {

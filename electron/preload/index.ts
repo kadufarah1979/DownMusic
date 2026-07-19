@@ -15,7 +15,9 @@ const CH = {
   openFolder: 'shell:openFolder',
   openExternal: 'shell:openExternal',
   historyList: 'history:list',
-  historyClear: 'history:clear'
+  historyClear: 'history:clear',
+  queueRetry: 'queue:retry',
+  queueRetryFailed: 'queue:retryFailed'
 } as const
 
 /** API tipada exposta ao renderer via contextBridge. */
@@ -25,6 +27,8 @@ const api = {
     ipcRenderer.invoke(CH.search, query, sourceIds),
   enqueue: (metas: TrackMeta[]): Promise<QueueItem[]> => ipcRenderer.invoke(CH.enqueue, metas),
   queueList: (): Promise<QueueItem[]> => ipcRenderer.invoke(CH.queueList),
+  retry: (itemId: string): Promise<void> => ipcRenderer.invoke(CH.queueRetry, itemId),
+  retryFailed: (): Promise<void> => ipcRenderer.invoke(CH.queueRetryFailed),
   getConfig: (): Promise<AppConfig> => ipcRenderer.invoke(CH.configGet),
   updateConfig: (patch: Partial<AppConfig>): Promise<AppConfig> =>
     ipcRenderer.invoke(CH.configUpdate, patch),

@@ -20,7 +20,9 @@ export const CH = {
   openFolder: 'shell:openFolder',
   openExternal: 'shell:openExternal',
   historyList: 'history:list',
-  historyClear: 'history:clear'
+  historyClear: 'history:clear',
+  queueRetry: 'queue:retry',
+  queueRetryFailed: 'queue:retryFailed'
 } as const
 
 export function registerIpc(
@@ -35,6 +37,8 @@ export function registerIpc(
   )
   ipcMain.handle(CH.enqueue, (_e, metas) => metas.map((m: any) => queue.enqueue(m)))
   ipcMain.handle(CH.queueList, () => queue.list())
+  ipcMain.handle(CH.queueRetry, (_e, itemId: string) => queue.retry(itemId))
+  ipcMain.handle(CH.queueRetryFailed, () => queue.retryFailed())
   ipcMain.handle(CH.configGet, () => config.get())
   ipcMain.handle(CH.configUpdate, (_e, patch) => {
     const cfg = config.update(patch)

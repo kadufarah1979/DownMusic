@@ -5,6 +5,7 @@ import type { QueueItem } from '@shared/types'
 /** Lista os itens da fila com estado e progresso, atualizada via IPC push. */
 export function QueueList() {
   const [items, setItems] = useState<Record<string, QueueItem>>({})
+  const [onlyErrors, setOnlyErrors] = useState(false)
 
   useEffect(() => {
     api.queueList().then((list) => {
@@ -17,32 +18,65 @@ export function QueueList() {
   }, [])
 
   const list = Object.values(items)
+  const errorCount = list.filter((i) => i.state === 'error').length
+  const visible = onlyErrors ? list.filter((i) => i.state === 'error') : list
 
   if (list.length === 0) {
     return <div className="flex flex-1 items-center justify-center text-sm text-neutral-500">Fila vazia</div>
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4">
-      <ul className="space-y-2">
-        {list.map((it) => (
-          <li key={it.itemId} className="rounded bg-neutral-800 p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">
-                {it.meta.artists.join(', ')} — {it.meta.title}
-              </span>
-              <StateBadge item={it} />
-            </div>
-            <div className="mt-2 h-1.5 w-full rounded bg-neutral-700">
-              <div
-                className="h-1.5 rounded bg-emerald-500 transition-all"
-                style={{ width: `${it.progress}%` }}
-              />
-            </div>
-            {it.error && <p className="mt-1 text-xs text-red-400">{it.error}</p>}
-          </li>
-        ))}
-      </ul>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-2">
+        <div className="flex items-center gap-3 text-xs text-neutral-400">
+          <span>{list.length} na fila</span>
+          {errorCount > 0 && <span className="text-red-400">· {errorCount} com erro</span>}
+          {errorCount > 0 && (
+            <label className="flex cursor-pointer items-center gap-1.5">
+              <input type="checkbox" checked={onlyErrors} onChange={() => setOnlyErrors((v) => !v)} />
+              Só com erro
+            </label>
+          )}
+        </div>
+        {errorCount > 0 && (
+          <button
+            onClick={() => api.retryFailed()}
+            className="rounded bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600"
+          >
+            ↻ Tentar novamente ({errorCount})
+          </button>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        <ul className="space-y-2">
+          {visible.map((it) => (
+            <li key={it.itemId} className="rounded bg-neutral-800 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex-1 text-sm">
+                  {it.meta.artists.join(', ')} — {it.meta.title}
+                </span>
+                {it.state === 'error' && (
+                  <button
+                    onClick={() => api.retry(it.itemId)}
+                    className="rounded bg-neutral-700 px-2 py-0.5 text-xs hover:bg-neutral-600"
+                  >
+                    ↻ Tentar
+                  </button>
+                )}
+                <StateBadge item={it} />
+              </div>
+              <div className="mt-2 h-1.5 w-full rounded bg-neutral-700">
+                <div
+                  className={`h-1.5 rounded transition-all ${it.state === 'error' ? 'bg-red-500/50' : 'bg-emerald-500'}`}
+                  style={{ width: `${it.progress}%` }}
+                />
+              </div>
+              {it.error && <p className="mt-1 text-xs text-red-400">{it.error}</p>}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }

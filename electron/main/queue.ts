@@ -41,6 +41,21 @@ export class QueueManager extends EventEmitter {
     return item
   }
 
+  /** Re-executa um item que falhou (estado `error`). */
+  retry(itemId: string): void {
+    const item = this.items.get(itemId)
+    if (!item || item.state !== 'error') return
+    this.patch(item, { state: 'queued', progress: 0, error: undefined })
+    void this.queue.add(() => this.run(item))
+  }
+
+  /** Re-executa todos os itens que falharam. */
+  retryFailed(): void {
+    for (const item of this.items.values()) {
+      if (item.state === 'error') this.retry(item.itemId)
+    }
+  }
+
   private fetchOptions(): FetchOptions {
     return {
       format: this.cfg.format,

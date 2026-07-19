@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { UrlBar } from './components/UrlBar'
 import { SearchView } from './components/SearchView'
 import { QueueList } from './components/QueueList'
 import { SettingsView } from './components/SettingsView'
 import { HistoryView } from './components/HistoryView'
 import { TrackSelectList } from './components/TrackSelectList'
-import { loadDownloadedChecker } from './lib/downloaded'
+import { useDownloadedChecker } from './lib/downloaded'
 import { api } from './ipc'
 import type { TrackMeta } from '@shared/types'
 
@@ -14,12 +14,7 @@ type Tab = 'download' | 'search' | 'settings' | 'history'
 export function App() {
   const [tab, setTab] = useState<Tab>('download')
   const [resolved, setResolved] = useState<TrackMeta[]>([])
-  const [isDownloaded, setIsDownloaded] = useState<(t: TrackMeta) => boolean>(() => () => false)
-
-  // carrega o verificador "ja baixado?" quando ha faixas resolvidas
-  useEffect(() => {
-    if (resolved.length > 0) loadDownloadedChecker().then((fn) => setIsDownloaded(() => fn))
-  }, [resolved])
+  const isDownloaded = useDownloadedChecker()
 
   return (
     <div className="flex h-screen flex-col bg-neutral-900 text-neutral-100">
