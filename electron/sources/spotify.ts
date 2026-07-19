@@ -1,11 +1,13 @@
 import type { Source, ProgressFn } from './types'
 import type { TrackMeta, FetchOptions, AudioResult } from '../../shared/types'
 import type { YtDlpEngine } from '../engines/ytdlp'
+import type { SpotifyClient } from './spotifyClient'
 import { join } from 'node:path'
 
 /**
  * Fonte Spotify (modelo spotDL):
- * - search/resolve usam a Web API OFICIAL do Spotify apenas para METADADOS.
+ * - search/resolve usam a Web API OFICIAL do Spotify apenas para METADADOS
+ *   (delegado ao SpotifyClient).
  * - fetchAudio NAO baixa do Spotify: procura a mesma faixa no YouTube (por ISRC
  *   ou "artista - titulo") e baixa o audio publico via yt-dlp.
  * Este e o caminho defensavel; nao ha captura de stream com DRM.
@@ -15,31 +17,19 @@ export class SpotifySource implements Source {
 
   constructor(
     private readonly ytdlp: YtDlpEngine,
-    private readonly creds: { clientId?: string; clientSecret?: string }
+    private readonly client: SpotifyClient
   ) {}
 
   matches(url: string): boolean {
-    return /open\.spotify\.com\/(track|album|playlist)/i.test(url)
-  }
-
-  private ensureCreds(): void {
-    if (!this.creds.clientId || !this.creds.clientSecret) {
-      throw new Error('Credenciais do Spotify ausentes. Configure Client ID/Secret nas Configuracoes.')
-    }
+    return /open\.spotify\.com\/(track|album|playlist)/i.test(url) || /^spotify:(track|album|playlist):/i.test(url)
   }
 
   async search(query: string): Promise<TrackMeta[]> {
-    this.ensureCreds()
-    // TODO: autenticar (client credentials) e chamar /v1/search.
-    void query
-    return []
+    return this.client.searchTracks(query)
   }
 
   async resolve(url: string): Promise<TrackMeta[]> {
-    this.ensureCreds()
-    // TODO: extrair id/tipo da URL e chamar /v1/tracks|albums|playlists (expandir).
-    void url
-    return []
+    return this.client.resolveUrl(url)
   }
 
   async fetchAudio(track: TrackMeta, opts: FetchOptions, onProgress: ProgressFn): Promise<AudioResult> {

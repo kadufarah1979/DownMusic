@@ -8,6 +8,7 @@ import { registerIpc } from './ipc'
 import { YtDlpEngine } from '../engines/ytdlp'
 import { FfmpegEngine } from '../engines/ffmpeg'
 import { SpotifySource } from '../sources/spotify'
+import { SpotifyClient } from '../sources/spotifyClient'
 import { YouTubeSource } from '../sources/youtube'
 import { BandcampSource } from '../sources/bandcamp'
 import { SoundCloudSource } from '../sources/soundcloud'
@@ -22,7 +23,7 @@ function buildCore() {
   const ffmpeg = new FfmpegEngine()
 
   const sources = [
-    new SpotifySource(ytdlp, cfg.spotify),
+    new SpotifySource(ytdlp, new SpotifyClient(cfg.spotify)),
     new YouTubeSource(ytdlp),
     new BandcampSource(ytdlp),
     new SoundCloudSource(ytdlp),
