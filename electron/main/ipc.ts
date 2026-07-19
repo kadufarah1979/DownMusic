@@ -23,7 +23,9 @@ export function registerIpc(
   const { resolver, queue, config } = deps
 
   ipcMain.handle(CH.resolve, (_e, url: string) => resolver.resolve(url))
-  ipcMain.handle(CH.search, (_e, query: string, sourceId?: string) => resolver.search(query, sourceId))
+  ipcMain.handle(CH.search, (_e, query: string, sourceIds: string[]) =>
+    resolver.searchMany(query, sourceIds as any)
+  )
   ipcMain.handle(CH.enqueue, (_e, metas) => metas.map((m: any) => queue.enqueue(m)))
   ipcMain.handle(CH.queueList, () => queue.list())
   ipcMain.handle(CH.configGet, () => config.get())

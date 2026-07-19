@@ -1,5 +1,5 @@
 import type { Source } from '../sources/types'
-import type { TrackMeta } from '../../shared/types'
+import type { TrackMeta, SearchGroup, SourceId } from '../../shared/types'
 
 /**
  * Roteia URLs para a fonte correta e centraliza a busca por texto.
@@ -20,11 +20,23 @@ export class Resolver {
     return source.resolve(url)
   }
 
-  /** Busca por texto em uma fonte especifica (default: spotify). */
-  async search(query: string, sourceId = 'spotify'): Promise<TrackMeta[]> {
-    const source = this.sources.find((s) => s.id === sourceId)
-    if (!source) throw new Error(`Fonte desconhecida: ${sourceId}`)
-    return source.search(query)
+  /**
+   * Busca por texto em varias fontes em paralelo, agrupando por plataforma.
+   * Erro de uma fonte e isolado (allSettled): as demais continuam. Ordem = ordem pedida.
+   */
+  async searchMany(query: string, sourceIds: SourceId[]): Promise<SearchGroup[]> {
+    const settled = await Promise.allSettled(
+      sourceIds.map((id) => {
+        const source = this.sources.find((s) => s.id === id)
+        return source ? source.search(query) : Promise.reject(new Error(`Fonte desconhecida: ${id}`))
+      })
+    )
+    return sourceIds.map((sourceId, i) => {
+      const r = settled[i]
+      if (r.status === 'fulfilled') return { sourceId, tracks: r.value }
+      const error = r.reason instanceof Error ? r.reason.message : String(r.reason)
+      return { sourceId, tracks: [], error }
+    })
   }
 
   getSource(id: string): Source | undefined {

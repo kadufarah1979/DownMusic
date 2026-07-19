@@ -33,6 +33,13 @@ export interface AudioResult {
   sourceCodec?: string
 }
 
+/** Resultado da busca agrupado por plataforma (uma entrada por fonte pesquisada). */
+export interface SearchGroup {
+  sourceId: SourceId
+  tracks: TrackMeta[]
+  error?: string
+}
+
 export type QueueItemState = 'queued' | 'running' | 'done' | 'error' | 'canceled'
 
 export interface QueueItem {

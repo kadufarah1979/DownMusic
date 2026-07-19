@@ -1,26 +1,41 @@
 import { useState } from 'react'
 import { api } from '../ipc'
-import type { TrackMeta } from '@shared/types'
+import type { SearchGroup, SourceId, TrackMeta } from '@shared/types'
 
-/** Busca por texto (Spotify) e permite enfileirar resultados. */
+/** Plataformas pesquisaveis (Bandcamp fica de fora — yt-dlp nao busca nele). */
+const PLATFORMS: { id: SourceId; label: string }[] = [
+  { id: 'spotify', label: 'Spotify' },
+  { id: 'deezer', label: 'Deezer' },
+  { id: 'youtube', label: 'YouTube' },
+  { id: 'soundcloud', label: 'SoundCloud' }
+]
+
+/** Busca por texto em varias plataformas (multi-selecao), resultados agrupados. */
 export function SearchView() {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<TrackMeta[]>([])
+  const [selected, setSelected] = useState<SourceId[]>(PLATFORMS.map((p) => p.id))
+  const [groups, setGroups] = useState<SearchGroup[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  function toggle(id: SourceId) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
+
   async function run() {
-    if (!query.trim()) return
+    if (!query.trim() || selected.length === 0) return
     setBusy(true)
     setError(null)
     try {
-      setResults(await api.search(query.trim(), 'spotify'))
+      setGroups(await api.search(query.trim(), selected))
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy(false)
     }
   }
+
+  const label = (id: SourceId) => PLATFORMS.find((p) => p.id === id)?.label ?? id
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -37,30 +52,79 @@ export function SearchView() {
             {busy ? '...' : 'Buscar'}
           </button>
         </div>
+
+        <div className="mt-3 flex flex-wrap gap-4">
+          {PLATFORMS.map((p) => (
+            <label key={p.id} className="flex cursor-pointer items-center gap-2 text-sm text-neutral-300">
+              <input type="checkbox" checked={selected.includes(p.id)} onChange={() => toggle(p.id)} />
+              {p.label}
+            </label>
+          ))}
+        </div>
         {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {results.length === 0 ? (
-          <p className="text-sm text-neutral-500">Sem resultados.</p>
+        {groups.length === 0 ? (
+          <p className="text-sm text-neutral-500">Sem resultados. Faca uma busca.</p>
         ) : (
-          <ul className="space-y-2">
-            {results.map((t) => (
-              <li key={t.id} className="flex items-center justify-between rounded bg-neutral-800 p-3">
-                <span className="text-sm">
-                  {t.artists.join(', ')} — {t.title}
-                </span>
-                <button
-                  onClick={() => api.enqueue([t])}
-                  className="rounded bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600"
-                >
-                  Enfileirar
-                </button>
-              </li>
+          <div className="space-y-6">
+            {groups.map((g) => (
+              <GroupSection key={g.sourceId} group={g} title={label(g.sourceId)} />
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>
+  )
+}
+
+function GroupSection({ group, title }: { group: SearchGroup; title: string }) {
+  return (
+    <section>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-neutral-200">
+          {title} <span className="text-neutral-500">({group.tracks.length})</span>
+        </h2>
+        {group.tracks.length > 0 && (
+          <button
+            onClick={() => api.enqueue(group.tracks)}
+            className="rounded bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600"
+          >
+            Enfileirar todos
+          </button>
+        )}
+      </div>
+
+      {group.error ? (
+        <p className="text-sm text-red-400">{group.error}</p>
+      ) : group.tracks.length === 0 ? (
+        <p className="text-sm text-neutral-500">Nenhum resultado.</p>
+      ) : (
+        <ul className="space-y-2">
+          {group.tracks.map((t) => (
+            <TrackRow key={`${t.sourceId}:${t.id}`} track={t} />
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+function TrackRow({ track }: { track: TrackMeta }) {
+  return (
+    <li className="flex items-center justify-between rounded bg-neutral-800 p-3">
+      <span className="text-sm">
+        {track.artists.join(', ')}
+        {track.artists.length ? ' — ' : ''}
+        {track.title}
+      </span>
+      <button
+        onClick={() => api.enqueue([track])}
+        className="rounded bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600"
+      >
+        +
+      </button>
+    </li>
   )
 }

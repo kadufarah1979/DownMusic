@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AppConfig, QueueItem, TrackMeta } from '../../shared/types'
+import type { AppConfig, QueueItem, TrackMeta, SearchGroup, SourceId } from '../../shared/types'
 
 /** Nomes de canais espelhados de main/ipc.ts. */
 const CH = {
@@ -15,8 +15,8 @@ const CH = {
 /** API tipada exposta ao renderer via contextBridge. */
 const api = {
   resolve: (url: string): Promise<TrackMeta[]> => ipcRenderer.invoke(CH.resolve, url),
-  search: (query: string, sourceId?: string): Promise<TrackMeta[]> =>
-    ipcRenderer.invoke(CH.search, query, sourceId),
+  search: (query: string, sourceIds: SourceId[]): Promise<SearchGroup[]> =>
+    ipcRenderer.invoke(CH.search, query, sourceIds),
   enqueue: (metas: TrackMeta[]): Promise<QueueItem[]> => ipcRenderer.invoke(CH.enqueue, metas),
   queueList: (): Promise<QueueItem[]> => ipcRenderer.invoke(CH.queueList),
   getConfig: (): Promise<AppConfig> => ipcRenderer.invoke(CH.configGet),

@@ -36,6 +36,43 @@ describe('Resolver', () => {
   })
 })
 
+describe('Resolver.searchMany', () => {
+  const track = (id: string): TrackMeta => ({ id, title: id, artists: [], sourceId: 'spotify', sourceUrl: '' })
+
+  function searchSource(id: Source['id'], fn: () => Promise<TrackMeta[]>): Source {
+    return { id, matches: () => false, search: fn, resolve: async () => [], fetchAudio: async () => ({ rawPath: '' }) }
+  }
+
+  it('busca em paralelo, preserva a ordem pedida e agrupa por fonte', async () => {
+    const resolver = new Resolver([
+      searchSource('spotify', async () => [track('s1')]),
+      searchSource('youtube', async () => [track('y1')])
+    ])
+    const groups = await resolver.searchMany('q', ['youtube', 'spotify'])
+    expect(groups.map((g) => g.sourceId)).toEqual(['youtube', 'spotify']) // ordem pedida
+    expect(groups[1].tracks.map((t) => t.id)).toEqual(['s1'])
+  })
+
+  it('isola erro por fonte: uma falhando nao derruba as outras', async () => {
+    const resolver = new Resolver([
+      searchSource('spotify', async () => {
+        throw new Error('credenciais ausentes')
+      }),
+      searchSource('deezer', async () => [track('d1')])
+    ])
+    const groups = await resolver.searchMany('q', ['spotify', 'deezer'])
+    expect(groups[0]).toMatchObject({ sourceId: 'spotify', tracks: [] })
+    expect(groups[0].error).toMatch(/credenciais/i)
+    expect(groups[1].tracks.map((t) => t.id)).toEqual(['d1'])
+  })
+
+  it('fonte desconhecida vira grupo com erro', async () => {
+    const resolver = new Resolver([])
+    const groups = await resolver.searchMany('q', ['spotify'])
+    expect(groups[0].error).toMatch(/desconhecida/i)
+  })
+})
+
 describe('renderTemplate', () => {
   const meta: TrackMeta = {
     id: '1',
