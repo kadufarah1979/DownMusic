@@ -57,12 +57,15 @@ export function buildConvertArgs(
   outPath: string,
   format: AudioFormat,
   quality: AudioQuality,
-  meta: TrackMeta
+  meta: TrackMeta,
+  coverPath?: string
 ): string[] {
-  const withCover = supportsCover(format) && !!meta.coverUrl
+  // capa vem de um ARQUIVO LOCAL (baixado antes) — nunca uma URL, para nao
+  // depender da stack de rede/TLS do ffmpeg (alguns builds estaticos travam).
+  const withCover = supportsCover(format) && !!coverPath
 
   const args: string[] = ['-y', '-i', inPath]
-  if (withCover) args.push('-i', meta.coverUrl!)
+  if (withCover) args.push('-i', coverPath!)
 
   if (withCover) {
     args.push('-map', '0:a', '-map', '1:v', '-c:v', 'mjpeg', '-disposition:v', 'attached_pic')
@@ -101,9 +104,10 @@ export class FfmpegEngine {
     outPath: string,
     format: AudioFormat,
     quality: AudioQuality,
-    meta: TrackMeta
+    meta: TrackMeta,
+    coverPath?: string
   ): Promise<string> {
-    await this.runner.run(this.bin, buildConvertArgs(inPath, outPath, format, quality, meta))
+    await this.runner.run(this.bin, buildConvertArgs(inPath, outPath, format, quality, meta, coverPath))
     return outPath
   }
 }

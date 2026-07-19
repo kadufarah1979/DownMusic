@@ -7,6 +7,7 @@ import { Tagger } from './tagger'
 import { registerIpc } from './ipc'
 import { HistoryStore } from './history'
 import { PlaylistStore, PlaylistService } from './playlists'
+import { binPath } from './binaries'
 import { YtDlpEngine } from '../engines/ytdlp'
 import { FfmpegEngine } from '../engines/ffmpeg'
 import { SpotifySource } from '../sources/spotify'
@@ -22,8 +23,10 @@ function buildCore() {
   const config = new ConfigStore()
   const cfg = config.get()
 
-  const ytdlp = new YtDlpEngine()
-  const ffmpeg = new FfmpegEngine()
+  // no AppImage usa os binarios embarcados (resources/bin); em dev usa o PATH
+  const binOpts = { isPackaged: app.isPackaged, resourcesPath: process.resourcesPath }
+  const ytdlp = new YtDlpEngine(binPath('yt-dlp', binOpts))
+  const ffmpeg = new FfmpegEngine(binPath('ffmpeg', binOpts))
 
   const sources = [
     // provider dinamico: le as credenciais atuais da config a cada chamada,

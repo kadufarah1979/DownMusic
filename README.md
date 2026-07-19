@@ -32,8 +32,13 @@ SMOKE=1 YTDLP_BIN="$HOME/.local/bin/yt-dlp" npx vitest run electron/smoke
 ## Distribuicao (AppImage)
 
 ```bash
-npm run dist       # gera dist/DownMusic-<versao>.AppImage
+bash scripts/fetch-binaries.sh   # baixa yt-dlp + ffmpeg estaticos p/ resources/bin
+npm run dist                     # gera dist/DownMusic-<versao>.AppImage
 ```
+
+O `yt-dlp` e o `ffmpeg` sao **embarcados** no AppImage (via `extraResources`),
+entao o app empacotado NAO depende deles no PATH. Em desenvolvimento
+(`npm run dev`) ainda usa o `yt-dlp`/`ffmpeg` do PATH.
 
 Rodar o AppImage no Linux:
 
@@ -51,9 +56,8 @@ Requisitos de runtime (distros recentes, ex. Ubuntu 24.04):
   - manter o sandbox: `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`
     (persistir em `/etc/sysctl.d/`); ou
   - rodar com `--no-sandbox` (desliga o sandbox).
-- **yt-dlp e ffmpeg** precisam estar no PATH do app. O `ffmpeg` costuma
-  vir do sistema; garanta o `yt-dlp` acessivel (ex: `/usr/local/bin/yt-dlp`)
-  — ao abrir pelo gerenciador de arquivos, `~/.local/bin` pode nao estar no PATH.
+
+`yt-dlp` e `ffmpeg` ja vem embarcados no AppImage — nao precisa instalar nada.
 
 ## Arquitetura
 

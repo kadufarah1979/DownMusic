@@ -42,20 +42,21 @@ describe('buildConvertArgs', () => {
     expect(args).not.toContain('-b:a')
   })
 
-  it('embute a capa (segundo input + attached_pic) quando ha coverUrl', () => {
-    const args = buildConvertArgs('/in.webm', '/out.mp3', 'mp3', '320', meta)
-    // dois inputs: audio e capa
+  it('embute a capa de um ARQUIVO LOCAL (segundo input + attached_pic)', () => {
+    const args = buildConvertArgs('/in.webm', '/out.mp3', 'mp3', '320', meta, '/tmp/cover.jpg')
+    // dois inputs: audio e capa (arquivo local, nao URL)
     expect(args.filter((a) => a === '-i')).toHaveLength(2)
-    expect(args).toContain('https://img/cover.jpg')
+    expect(args).toContain('/tmp/cover.jpg')
+    expect(args).not.toContain('https://img/cover.jpg')
     expect(args).toContain('attached_pic')
   })
 
-  it('nao tenta embutir capa em opus (nao suportado) nem quando falta coverUrl', () => {
-    const opus = buildConvertArgs('/in.webm', '/out.opus', 'opus', '256', meta)
+  it('nao embute capa em opus (nao suportado) nem quando nao ha coverPath', () => {
+    const opus = buildConvertArgs('/in.webm', '/out.opus', 'opus', '256', meta, '/tmp/cover.jpg')
     expect(opus.filter((a) => a === '-i')).toHaveLength(1)
     expect(opus).not.toContain('attached_pic')
 
-    const noCover = buildConvertArgs('/in.webm', '/out.mp3', 'mp3', '320', { ...meta, coverUrl: undefined })
+    const noCover = buildConvertArgs('/in.webm', '/out.mp3', 'mp3', '320', meta)
     expect(noCover.filter((a) => a === '-i')).toHaveLength(1)
   })
 

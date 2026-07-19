@@ -1,5 +1,7 @@
 import { join, dirname, extname } from 'node:path'
-import { mkdir, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { randomUUID } from 'node:crypto'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import type { FfmpegEngine } from '../engines/ffmpeg'
 import type { AudioFormat, AudioResult, FetchOptions, TrackMeta } from '../../shared/types'
 
@@ -15,10 +17,32 @@ export class Tagger {
     const ext = outputExtension(opts.format, raw.rawPath)
     const outPath = join(opts.outputDir, `${rel}.${ext}`)
     await mkdir(dirname(outPath), { recursive: true })
-    await this.ffmpeg.convertAndTag(raw.rawPath, outPath, opts.format, opts.quality, meta)
-    // apaga o arquivo bruto baixado (evita acumulo de .webm/.raw ao lado dos mp3)
-    if (raw.rawPath !== outPath) await rm(raw.rawPath, { force: true })
+
+    // baixa a capa localmente (nunca deixa o ffmpeg buscar por HTTP/TLS)
+    const coverPath = await downloadCover(meta.coverUrl)
+    try {
+      await this.ffmpeg.convertAndTag(raw.rawPath, outPath, opts.format, opts.quality, meta, coverPath)
+    } finally {
+      if (coverPath) await rm(coverPath, { force: true }).catch(() => {})
+      // apaga o arquivo bruto baixado (evita acumulo de .webm/.raw ao lado dos mp3)
+      if (raw.rawPath !== outPath) await rm(raw.rawPath, { force: true })
+    }
     return outPath
+  }
+}
+
+/** Baixa a capa (http/https) para um arquivo temporario; retorna undefined se falhar. */
+async function downloadCover(url?: string): Promise<string | undefined> {
+  if (!url || !/^https?:\/\//i.test(url)) return undefined
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return undefined
+    const buf = Buffer.from(await res.arrayBuffer())
+    const file = join(tmpdir(), `downmusic-cover-${randomUUID()}.jpg`)
+    await writeFile(file, buf)
+    return file
+  } catch {
+    return undefined
   }
 }
 
