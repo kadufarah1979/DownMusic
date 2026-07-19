@@ -66,6 +66,23 @@ export function buildInfoArgs(url: string): string[] {
   return ['--dump-json', '--no-download', '--no-warnings', url]
 }
 
+/**
+ * Monta os argumentos de busca (ytsearch/scsearch) em modo leve (--flat-playlist),
+ * retornando ate `n` resultados como JSON, sem resolver cada video.
+ */
+export function buildSearchListArgs(query: string, prefix: string, n: number): string[] {
+  return [`${prefix}${n}:${query}`, '--flat-playlist', '--dump-json', '--no-download', '--no-warnings']
+}
+
+/** Faz parse de uma saida JSON linha a linha (um objeto por linha nao vazia). */
+function parseJsonLines(stdout: string): Record<string, unknown>[] {
+  return stdout
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
+    .map((l) => JSON.parse(l) as Record<string, unknown>)
+}
+
 /** Retorna a ultima linha nao vazia (sem espacos) de uma saida, ou null. */
 export function parseLastLine(stdout: string): string | null {
   const lines = stdout
@@ -116,11 +133,16 @@ export class YtDlpEngine {
    */
   async dumpJson(url: string): Promise<Record<string, unknown>[]> {
     const { stdout } = await this.runner.run(this.bin, buildInfoArgs(url), () => {})
-    return stdout
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0)
-      .map((l) => JSON.parse(l) as Record<string, unknown>)
+    return parseJsonLines(stdout)
+  }
+
+  /**
+   * Busca leve (ytsearch/scsearch com --flat-playlist): retorna ate `n`
+   * entradas de metadados sem baixar. Usada pelas fontes YouTube/SoundCloud.
+   */
+  async searchList(query: string, prefix: string, n: number): Promise<Record<string, unknown>[]> {
+    const { stdout } = await this.runner.run(this.bin, buildSearchListArgs(query, prefix, n), () => {})
+    return parseJsonLines(stdout)
   }
 
   /**

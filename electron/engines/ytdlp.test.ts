@@ -3,6 +3,7 @@ import {
   parseProgress,
   buildDownloadArgs,
   buildSearchArgs,
+  buildSearchListArgs,
   buildInfoArgs,
   parseLastLine,
   YtDlpEngine,
@@ -83,6 +84,20 @@ describe('buildInfoArgs', () => {
   })
 })
 
+describe('buildSearchListArgs', () => {
+  it('monta ytsearchN com flat-playlist e dump-json', () => {
+    const args = buildSearchListArgs('daft punk', 'ytsearch', 8)
+    expect(args[0]).toBe('ytsearch8:daft punk')
+    expect(args).toContain('--flat-playlist')
+    expect(args).toContain('--dump-json')
+    expect(args).toContain('--no-download')
+  })
+
+  it('funciona para scsearch', () => {
+    expect(buildSearchListArgs('x', 'scsearch', 5)[0]).toBe('scsearch5:x')
+  })
+})
+
 /** Runner falso: emite linhas pre-definidas e devolve stdout/exitCode controlados. */
 function fakeRunner(opts: { lines?: string[]; stdout?: string; throws?: boolean }): ProcRunner {
   return {
@@ -149,6 +164,17 @@ describe('YtDlpEngine.dumpJson', () => {
     const runner = fakeRunner({ stdout: '\n{"id":"a"}\n\n' })
     const engine = new YtDlpEngine('yt-dlp', runner)
     expect(await engine.dumpJson('x')).toHaveLength(1)
+  })
+})
+
+describe('YtDlpEngine.searchList', () => {
+  it('faz parse das entradas de busca (uma por linha)', async () => {
+    const runner = fakeRunner({
+      stdout: '{"id":"v1","title":"A","webpage_url":"https://youtu.be/v1"}\n{"id":"v2","title":"B","webpage_url":"https://youtu.be/v2"}\n'
+    })
+    const engine = new YtDlpEngine('yt-dlp', runner)
+    const infos = await engine.searchList('x', 'ytsearch', 8)
+    expect(infos.map((i) => i.id)).toEqual(['v1', 'v2'])
   })
 })
 

@@ -14,9 +14,12 @@ export class YouTubeSource implements Source {
   }
 
   async search(query: string): Promise<TrackMeta[]> {
-    // TODO: usar ytsearch para retornar candidatos.
-    void query
-    return []
+    const infos = await this.ytdlp.searchList(query, 'ytsearch', 8)
+    return infos.map((info) => {
+      const t = ytdlpInfoToTrack(info, this.id)
+      // garante uma URL de video baixavel (entradas flat as vezes so tem o id)
+      return { ...t, sourceUrl: `https://www.youtube.com/watch?v=${t.id}` }
+    })
   }
 
   async resolve(url: string): Promise<TrackMeta[]> {

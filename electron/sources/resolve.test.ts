@@ -39,6 +39,29 @@ describe('YouTubeSource.resolve', () => {
   })
 })
 
+describe('YouTubeSource.search', () => {
+  it('mapeia resultados e garante sourceUrl = watch URL baixavel', async () => {
+    const engine = engineReturning(
+      JSON.stringify({ id: '5NV6Rdv1a3I', title: 'Get Lucky', uploader: 'Daft Punk', duration: 249 })
+    )
+    const r = await new YouTubeSource(engine).search('get lucky')
+    expect(r).toHaveLength(1)
+    expect(r[0]).toMatchObject({ id: '5NV6Rdv1a3I', title: 'Get Lucky', sourceId: 'youtube' })
+    expect(r[0].sourceUrl).toBe('https://www.youtube.com/watch?v=5NV6Rdv1a3I')
+  })
+})
+
+describe('SoundCloudSource.search', () => {
+  it('mapeia resultados usando o webpage_url do SoundCloud', async () => {
+    const engine = engineReturning(
+      JSON.stringify({ id: '88335161', title: 'Get Lucky', uploader: 'DJ KB', webpage_url: 'https://soundcloud.com/djkb/get-lucky' })
+    )
+    const r = await new SoundCloudSource(engine).search('get lucky')
+    expect(r[0]).toMatchObject({ id: '88335161', sourceId: 'soundcloud' })
+    expect(r[0].sourceUrl).toBe('https://soundcloud.com/djkb/get-lucky')
+  })
+})
+
 describe('BandcampSource.resolve', () => {
   it('usa artist e album do Bandcamp', async () => {
     const engine = engineReturning(

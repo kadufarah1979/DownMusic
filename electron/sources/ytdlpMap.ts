@@ -24,7 +24,7 @@ export function ytdlpInfoToTrack(info: YtDlpInfo, sourceId: SourceId): TrackMeta
     artists: resolveArtists(info),
     album: str(info.album),
     coverUrl: str(info.thumbnail),
-    durationSec: typeof info.duration === 'number' ? info.duration : undefined,
+    durationSec: typeof info.duration === 'number' ? Math.round(info.duration) : undefined,
     sourceId,
     sourceUrl: str(info.webpage_url) ?? str(info.original_url) ?? ''
   }

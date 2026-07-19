@@ -14,9 +14,13 @@ export class SoundCloudSource implements Source {
   }
 
   async search(query: string): Promise<TrackMeta[]> {
-    // TODO: `scsearch` via yt-dlp.
-    void query
-    return []
+    const infos = await this.ytdlp.searchList(query, 'scsearch', 8)
+    return infos.map((info) => {
+      const t = ytdlpInfoToTrack(info, this.id)
+      // prefere a URL publica do SoundCloud (webpage_url), com fallback p/ url
+      const url = (info.webpage_url as string) ?? (info.url as string) ?? t.sourceUrl
+      return { ...t, sourceUrl: url }
+    })
   }
 
   async resolve(url: string): Promise<TrackMeta[]> {
