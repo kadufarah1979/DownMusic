@@ -28,11 +28,22 @@ export function SettingsView() {
     <div className="flex-1 overflow-y-auto p-4">
       <div className="max-w-xl space-y-4">
         <Field label="Pasta de destino">
-          <input
-            value={cfg.outputDir}
-            onChange={(e) => set('outputDir', e.target.value)}
-            className="w-full rounded bg-neutral-800 px-3 py-2 text-sm outline-none"
-          />
+          <div className="flex gap-2">
+            <input
+              value={cfg.outputDir}
+              onChange={(e) => set('outputDir', e.target.value)}
+              className="flex-1 rounded bg-neutral-800 px-3 py-2 text-sm outline-none"
+            />
+            <button
+              onClick={async () => {
+                const dir = await api.pickFolder()
+                if (dir) set('outputDir', dir)
+              }}
+              className="whitespace-nowrap rounded bg-neutral-700 px-3 py-2 text-sm hover:bg-neutral-600"
+            >
+              Escolher...
+            </button>
+          </div>
         </Field>
 
         <Field label="Template de nome">

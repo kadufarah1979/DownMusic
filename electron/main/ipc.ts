@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, dialog, BrowserWindow } from 'electron'
 import type { Resolver } from './resolver'
 import type { QueueManager } from './queue'
 import type { ConfigStore } from './config'
@@ -13,7 +13,8 @@ export const CH = {
   queueList: 'queue:list',
   queueUpdate: 'queue:update',
   configGet: 'config:get',
-  configUpdate: 'config:update'
+  configUpdate: 'config:update',
+  pickFolder: 'dialog:pickFolder'
 } as const
 
 export function registerIpc(
@@ -33,6 +34,15 @@ export function registerIpc(
     const cfg = config.update(patch)
     queue.setConfig(cfg)
     return cfg
+  })
+
+  // Dialogo nativo de selecao de pasta; retorna o caminho ou null se cancelado.
+  ipcMain.handle(CH.pickFolder, async () => {
+    const res = await dialog.showOpenDialog(win, {
+      properties: ['openDirectory', 'createDirectory'],
+      defaultPath: config.get().outputDir || undefined
+    })
+    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
   })
 
   // Push de atualizacoes de progresso da fila para o renderer.
