@@ -17,6 +17,14 @@ describe('parseSpotifyUrl', () => {
     expect(parseSpotifyUrl('spotify:track:t1')).toEqual({ type: 'track', id: 't1' })
   })
 
+  it('aceita o segmento de localidade intl-xx nas URLs', () => {
+    expect(parseSpotifyUrl('https://open.spotify.com/intl-pt/track/42F0eI7tFI8Xez4iqXObBt')).toEqual({
+      type: 'track',
+      id: '42F0eI7tFI8Xez4iqXObBt'
+    })
+    expect(parseSpotifyUrl('https://open.spotify.com/intl-de/album/xyz?si=2')).toEqual({ type: 'album', id: 'xyz' })
+  })
+
   it('retorna null para URLs nao-Spotify', () => {
     expect(parseSpotifyUrl('https://youtu.be/x')).toBeNull()
   })

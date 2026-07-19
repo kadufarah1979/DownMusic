@@ -1,7 +1,7 @@
 import type { Source, ProgressFn } from './types'
 import type { TrackMeta, FetchOptions, AudioResult } from '../../shared/types'
 import type { YtDlpEngine } from '../engines/ytdlp'
-import type { SpotifyClient } from './spotifyClient'
+import { parseSpotifyUrl, type SpotifyClient } from './spotifyClient'
 import { join } from 'node:path'
 
 /**
@@ -21,7 +21,8 @@ export class SpotifySource implements Source {
   ) {}
 
   matches(url: string): boolean {
-    return /open\.spotify\.com\/(track|album|playlist)/i.test(url) || /^spotify:(track|album|playlist):/i.test(url)
+    // delega ao parser para nunca divergir do que resolveUrl aceita
+    return parseSpotifyUrl(url) !== null
   }
 
   async search(query: string): Promise<TrackMeta[]> {

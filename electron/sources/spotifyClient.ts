@@ -47,7 +47,8 @@ export type SpotifyUrlType = 'track' | 'album' | 'playlist'
 
 /** Extrai {type, id} de uma URL/URI do Spotify, ou null. */
 export function parseSpotifyUrl(url: string): { type: SpotifyUrlType; id: string } | null {
-  const web = /open\.spotify\.com\/(track|album|playlist)\/([A-Za-z0-9]+)/.exec(url)
+  // aceita o segmento de localidade opcional, ex: /intl-pt/track/...
+  const web = /open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(track|album|playlist)\/([A-Za-z0-9]+)/.exec(url)
   if (web) return { type: web[1] as SpotifyUrlType, id: web[2] }
   const uri = /^spotify:(track|album|playlist):([A-Za-z0-9]+)$/.exec(url)
   if (uri) return { type: uri[1] as SpotifyUrlType, id: uri[2] }
