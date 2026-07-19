@@ -74,6 +74,17 @@ export function buildSearchListArgs(query: string, prefix: string, n: number): s
   return [`${prefix}${n}:${query}`, '--flat-playlist', '--dump-json', '--no-download', '--no-warnings']
 }
 
+/** Args para buscar PLAYLISTS do YouTube por nome (filtro sp de playlists). */
+export function buildPlaylistSearchArgs(query: string, n: number): string[] {
+  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAw%3D%3D`
+  return [url, '--flat-playlist', '--dump-json', '--playlist-end', String(n), '--no-warnings']
+}
+
+/** Args para listar as faixas de uma playlist em modo leve (flat, rapido). */
+export function buildFlatArgs(url: string): string[] {
+  return ['--flat-playlist', '--dump-json', '--no-download', '--no-warnings', url]
+}
+
 /** Faz parse de uma saida JSON linha a linha (um objeto por linha nao vazia). */
 function parseJsonLines(stdout: string): Record<string, unknown>[] {
   return stdout
@@ -142,6 +153,20 @@ export class YtDlpEngine {
    */
   async searchList(query: string, prefix: string, n: number): Promise<Record<string, unknown>[]> {
     const { stdout } = await this.runner.run(this.bin, buildSearchListArgs(query, prefix, n), () => {})
+    return parseJsonLines(stdout)
+  }
+
+  /** Busca playlists do YouTube por nome; retorna ate `n` candidatas {url, title}. */
+  async searchPlaylists(name: string, n = 5): Promise<{ url: string; title: string }[]> {
+    const { stdout } = await this.runner.run(this.bin, buildPlaylistSearchArgs(name, n), () => {})
+    return parseJsonLines(stdout)
+      .filter((e) => typeof e.url === 'string' && /list=/.test(e.url as string))
+      .map((e) => ({ url: e.url as string, title: (e.title as string) ?? '' }))
+  }
+
+  /** Lista as faixas de uma playlist em modo leve (flat). */
+  async dumpFlat(url: string): Promise<Record<string, unknown>[]> {
+    const { stdout } = await this.runner.run(this.bin, buildFlatArgs(url), () => {})
     return parseJsonLines(stdout)
   }
 

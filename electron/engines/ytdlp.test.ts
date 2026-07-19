@@ -4,6 +4,7 @@ import {
   buildDownloadArgs,
   buildSearchArgs,
   buildSearchListArgs,
+  buildPlaylistSearchArgs,
   buildInfoArgs,
   parseLastLine,
   YtDlpEngine,
@@ -164,6 +165,29 @@ describe('YtDlpEngine.dumpJson', () => {
     const runner = fakeRunner({ stdout: '\n{"id":"a"}\n\n' })
     const engine = new YtDlpEngine('yt-dlp', runner)
     expect(await engine.dumpJson('x')).toHaveLength(1)
+  })
+})
+
+describe('buildPlaylistSearchArgs', () => {
+  it('busca playlists do YouTube (results + filtro sp) com playlist-end', () => {
+    const args = buildPlaylistSearchArgs('reggae hits', 5)
+    expect(args[0]).toContain('youtube.com/results?search_query=reggae%20hits')
+    expect(args[0]).toContain('sp=EgIQAw%3D%3D')
+    expect(args).toContain('--flat-playlist')
+    expect(args[args.indexOf('--playlist-end') + 1]).toBe('5')
+  })
+})
+
+describe('YtDlpEngine.searchPlaylists', () => {
+  it('retorna so entradas de playlist (com list=)', async () => {
+    const runner = fakeRunner({
+      stdout:
+        '{"url":"https://www.youtube.com/playlist?list=PL1","title":"Reggae Hits"}\n' +
+        '{"url":"https://www.youtube.com/watch?v=x","title":"um video"}\n'
+    })
+    const engine = new YtDlpEngine('yt-dlp', runner)
+    const r = await engine.searchPlaylists('reggae hits')
+    expect(r).toEqual([{ url: 'https://www.youtube.com/playlist?list=PL1', title: 'Reggae Hits' }])
   })
 })
 

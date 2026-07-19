@@ -1,6 +1,14 @@
 import { api } from '../ipc'
 import { trackStatus, type TrackStatus } from '@shared/trackStatus'
-import type { QueueItemState, TrackMeta } from '@shared/types'
+import type { QueueItemState, SourceId, TrackMeta } from '@shared/types'
+
+const PLATFORM: Record<SourceId, string> = {
+  spotify: 'Spotify',
+  deezer: 'Deezer',
+  youtube: 'YouTube',
+  soundcloud: 'SoundCloud',
+  bandcamp: 'Bandcamp'
+}
 
 const BADGE: Record<TrackStatus, { label: string; cls: string }> = {
   error: { label: 'erro', cls: 'bg-red-900/60 text-red-300' },
@@ -20,11 +28,13 @@ const ACTION: Partial<Record<TrackStatus, string>> = {
 export function PlaylistTracks({
   tracks,
   isDownloaded,
-  queueStateOf
+  queueStateOf,
+  playlistSourceId
 }: {
   tracks: TrackMeta[]
   isDownloaded: (t: TrackMeta) => boolean
   queueStateOf: (t: TrackMeta) => QueueItemState | undefined
+  playlistSourceId?: SourceId
 }) {
   return (
     <ul className="space-y-1.5">
@@ -39,6 +49,11 @@ export function PlaylistTracks({
               {t.artists.length ? ' — ' : ''}
               {t.title}
             </span>
+            {playlistSourceId && t.sourceId !== playlistSourceId && (
+              <span className="whitespace-nowrap rounded bg-purple-900/60 px-2 py-0.5 text-xs text-purple-300">
+                via {PLATFORM[t.sourceId] ?? t.sourceId}
+              </span>
+            )}
             <span className={`whitespace-nowrap rounded px-2 py-0.5 text-xs ${badge.cls}`}>{badge.label}</span>
             {action && (
               <button

@@ -51,6 +51,16 @@ export class DeezerClient {
     return (res.data ?? []).map(deezerTrackToMeta)
   }
 
+  /** Busca PLAYLISTS por nome (para completar uma playlist truncada de outra fonte). */
+  async searchPlaylists(name: string, limit = 5): Promise<{ url: string; title: string; trackCount: number }[]> {
+    const res = await this.http.getJson(`${API}/search/playlist?q=${encodeURIComponent(name)}&limit=${limit}`)
+    return (res.data ?? []).map((p: { id: number | string; title?: string; nb_tracks?: number }) => ({
+      url: `https://www.deezer.com/playlist/${p.id}`,
+      title: p.title ?? '',
+      trackCount: p.nb_tracks ?? 0
+    }))
+  }
+
   /** Resolve uma URL (track/album/playlist) em 1..N faixas. */
   async resolveUrl(url: string): Promise<TrackMeta[]> {
     const parsed = parseDeezerUrl(url)

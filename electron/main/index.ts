@@ -7,6 +7,7 @@ import { Tagger } from './tagger'
 import { registerIpc } from './ipc'
 import { HistoryStore } from './history'
 import { PlaylistStore, PlaylistService } from './playlists'
+import { PlaylistCompleter } from './playlistCompleter'
 import { YtDlpEngine } from '../engines/ytdlp'
 import { FfmpegEngine } from '../engines/ffmpeg'
 import { SpotifySource } from '../sources/spotify'
@@ -25,6 +26,7 @@ function buildCore() {
   const ytdlp = new YtDlpEngine()
   const ffmpeg = new FfmpegEngine()
 
+  const deezerClient = new DeezerClient()
   const sources = [
     // provider dinamico: le as credenciais atuais da config a cada chamada,
     // refletindo o que o usuario salva em Configuracoes sem reiniciar.
@@ -32,7 +34,7 @@ function buildCore() {
     new YouTubeSource(ytdlp),
     new BandcampSource(ytdlp),
     new SoundCloudSource(ytdlp),
-    new DeezerSource(ytdlp, new DeezerClient())
+    new DeezerSource(ytdlp, deezerClient)
   ]
 
   const resolver = new Resolver(sources)
@@ -46,8 +48,9 @@ function buildCore() {
   })
 
   const playlists = new PlaylistService(new PlaylistStore(), resolver, history, queue)
+  const completer = new PlaylistCompleter(resolver, deezerClient, ytdlp)
 
-  return { config, resolver, queue, history, playlists, ytdlp, ffmpeg }
+  return { config, resolver, queue, history, playlists, completer, ytdlp, ffmpeg }
 }
 
 function createWindow(core: ReturnType<typeof buildCore>): void {

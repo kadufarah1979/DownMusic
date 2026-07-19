@@ -3,7 +3,7 @@ import { api } from '../ipc'
 import { PlaylistTracks } from './PlaylistTracks'
 import { useDownloadedChecker } from '../lib/downloaded'
 import { useQueueStatus } from '../lib/queueStatus'
-import type { PlaylistSubscription, SourceId, TrackMeta } from '@shared/types'
+import type { PlaylistCompletion, PlaylistSubscription, SourceId, TrackMeta } from '@shared/types'
 
 const LABEL: Record<SourceId, string> = {
   spotify: 'Spotify',
@@ -24,6 +24,7 @@ export function PlaylistsView() {
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [tracks, setTracks] = useState<Record<string, TracksState>>({})
+  const [completions, setCompletions] = useState<Record<string, 'searching' | PlaylistCompletion[]>>({})
 
   const isDownloaded = useDownloadedChecker()
   const queueStateOf = useQueueStatus()
@@ -102,6 +103,25 @@ export function PlaylistsView() {
     reload()
   }
 
+  // procura playlists equivalentes em outras plataformas (com autorizacao do usuario)
+  async function procurar(sub: PlaylistSubscription) {
+    setCompletions((p) => ({ ...p, [sub.url]: 'searching' }))
+    try {
+      const res = await api.findCompletions(sub.url)
+      setCompletions((p) => ({ ...p, [sub.url]: res }))
+    } catch {
+      setCompletions((p) => ({ ...p, [sub.url]: [] }))
+    }
+  }
+
+  // importa as faixas extras da candidata escolhida (merge client-side)
+  function importar(sub: PlaylistSubscription, comp: PlaylistCompletion) {
+    const base = tracks[sub.url]
+    if (!Array.isArray(base)) return
+    setTracks((p) => ({ ...p, [sub.url]: [...base, ...comp.extras] }))
+    setCompletions((p) => ({ ...p, [sub.url]: [] })) // esconde o painel apos importar
+  }
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="border-b border-neutral-800 p-4">
@@ -177,7 +197,21 @@ export function PlaylistsView() {
                       ) : 'error' in st ? (
                         <p className="text-sm text-red-400">{st.error}</p>
                       ) : (
-                        <PlaylistTracks tracks={st} isDownloaded={isDownloaded} queueStateOf={queueStateOf} />
+                        <>
+                          {s.sourceId === 'spotify' && st.length >= 100 && (
+                            <CompletionPanel
+                              state={completions[s.url]}
+                              onSearch={() => procurar(s)}
+                              onImport={(c) => importar(s, c)}
+                            />
+                          )}
+                          <PlaylistTracks
+                            tracks={st}
+                            isDownloaded={isDownloaded}
+                            queueStateOf={queueStateOf}
+                            playlistSourceId={s.sourceId}
+                          />
+                        </>
                       )}
                     </div>
                   )}
@@ -194,4 +228,88 @@ export function PlaylistsView() {
 function formatDate(iso: string): string {
   const d = new Date(iso)
   return isNaN(d.getTime()) ? iso : d.toLocaleString('pt-BR')
+}
+
+/** Aviso de truncamento + busca/importacao de playlist equivalente (com consentimento). */
+function CompletionPanel({
+  state,
+  onSearch,
+  onImport
+}: {
+  state: 'searching' | PlaylistCompletion[] | undefined
+  onSearch: () => void
+  onImport: (c: PlaylistCompletion) => void
+}) {
+  return (
+    <div className="mb-3 rounded border border-amber-900/50 bg-amber-950/30 p-3">
+      <p className="text-xs text-amber-300">
+        ⚠ O Spotify limita esta playlist a 100 faixas. Posso procurar a mesma playlist em outra plataforma para
+        completar.
+      </p>
+
+      {state === undefined && (
+        <button
+          onClick={onSearch}
+          className="mt-2 rounded bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600"
+        >
+          🔎 Procurar em outras plataformas
+        </button>
+      )}
+
+      {state === 'searching' && <p className="mt-2 text-xs text-neutral-400">Procurando (Deezer e YouTube)...</p>}
+
+      {Array.isArray(state) &&
+        (state.length === 0 ? (
+          <p className="mt-2 text-xs text-neutral-400">Nenhuma playlist equivalente encontrada em outra plataforma.</p>
+        ) : (
+          <ul className="mt-2 space-y-2">
+            {state.map((c) => (
+              <CandidateRow key={c.url} c={c} onImport={() => onImport(c)} />
+            ))}
+          </ul>
+        ))}
+    </div>
+  )
+}
+
+const PLAT: Record<SourceId, string> = {
+  spotify: 'Spotify',
+  deezer: 'Deezer',
+  youtube: 'YouTube',
+  soundcloud: 'SoundCloud',
+  bandcamp: 'Bandcamp'
+}
+
+function CandidateRow({ c, onImport }: { c: PlaylistCompletion; onImport: () => void }) {
+  const [showTracks, setShowTracks] = useState(false)
+  return (
+    <li className="rounded bg-neutral-900 p-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-xs">
+          <strong>{PLAT[c.platform] ?? c.platform}</strong> · {c.name} ·{' '}
+          <span className="text-emerald-400">{c.overlapPct}% de correspondencia</span> ·{' '}
+          <span className="text-neutral-400">+{c.addedCount} faixas</span>
+        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <button onClick={() => setShowTracks((v) => !v)} className="rounded px-2 py-0.5 text-xs text-neutral-400 hover:text-neutral-100">
+            {showTracks ? 'ocultar' : 'ver musicas'}
+          </button>
+          <button onClick={onImport} className="rounded bg-emerald-700 px-3 py-1 text-xs hover:bg-emerald-600">
+            Importar
+          </button>
+        </div>
+      </div>
+      {showTracks && (
+        <ul className="mt-2 max-h-40 overflow-y-auto space-y-1 border-t border-neutral-800 pt-2">
+          {c.extras.map((t) => (
+            <li key={`${t.sourceId}:${t.id}`} className="truncate text-xs text-neutral-400">
+              {t.artists.join(', ')}
+              {t.artists.length ? ' — ' : ''}
+              {t.title}
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  )
 }
