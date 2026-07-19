@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   parseSpotifyUrl,
   spotifyTrackToMeta,
+  parseEmbedTracklist,
   SpotifyClient,
   type HttpClient
 } from './spotifyClient'
@@ -52,6 +53,32 @@ describe('spotifyTrackToMeta', () => {
       sourceId: 'spotify',
       sourceUrl: 'https://open.spotify.com/track/t1'
     })
+  })
+})
+
+describe('parseEmbedTracklist', () => {
+  it('extrai faixas do __NEXT_DATA__ do embed (id da uri, subtitle=artistas, duration ms)', () => {
+    const html =
+      `<script id="__NEXT_DATA__" type="application/json">` +
+      JSON.stringify({
+        props: { pageProps: { state: { data: { entity: { trackList: [
+          { uri: 'spotify:track:42F0eI7tFI8Xez4iqXObBt', title: 'Action', subtitle: 'Nadine Sutherland, Terror Fabulous', duration: 201746 }
+        ] } } } } }
+      }) +
+      `</script>`
+    const r = parseEmbedTracklist(html)
+    expect(r).toHaveLength(1)
+    expect(r[0]).toMatchObject({
+      id: '42F0eI7tFI8Xez4iqXObBt',
+      title: 'Action',
+      artists: ['Nadine Sutherland', 'Terror Fabulous'],
+      durationSec: 202,
+      sourceId: 'spotify'
+    })
+  })
+
+  it('lanca erro se o embed nao tiver __NEXT_DATA__', () => {
+    expect(() => parseEmbedTracklist('<html>nada</html>')).toThrow(/embed|playlist/i)
   })
 })
 
@@ -147,16 +174,86 @@ describe('SpotifyClient.resolveUrl', () => {
     expect(r[0]).toMatchObject({ album: 'Disco', coverUrl: 'http://img/al.jpg' })
   })
 
-  it('playlist: mapeia items[].track', async () => {
+  it('playlist: mapeia items[].track (uma pagina)', async () => {
     const http = fakeHttp({
       get: {
-        '/v1/playlists/pl1': {
-          tracks: { items: [{ track: { id: 'p', name: 'P', artists: [{ name: 'Y' }], duration_ms: 1 } }] }
+        '/v1/playlists/pl1/tracks': {
+          items: [{ track: { id: 'p', name: 'P', artists: [{ name: 'Y' }], duration_ms: 1 } }],
+          next: null
         }
       }
     })
     const client = new SpotifyClient(creds, http)
     const r = await client.resolveUrl('https://open.spotify.com/playlist/pl1')
     expect(r.map((t) => t.id)).toEqual(['p'])
+  })
+
+  it('playlist restrita (403) faz fallback para o embed publico (sem credenciais)', async () => {
+    const embedHtml =
+      `<html><body><script id="__NEXT_DATA__" type="application/json">` +
+      JSON.stringify({
+        props: {
+          pageProps: {
+            state: {
+              data: {
+                entity: {
+                  trackList: [
+                    { uri: 'spotify:track:a', title: 'Action', subtitle: 'Nadine, Terror', duration: 201746 },
+                    { uri: 'spotify:track:b', title: 'Song2', subtitle: 'X', duration: 120000 }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }) +
+      `</script></body></html>`
+
+    const http: HttpClient = {
+      async getJson() {
+        throw new Error('GET .../v1/playlists/x/tracks -> HTTP 403 (Forbidden)')
+      },
+      async postForm() {
+        return { access_token: 'x', expires_in: 3600 }
+      },
+      async getText() {
+        return embedHtml
+      }
+    }
+    const client = new SpotifyClient(creds, http)
+    const r = await client.resolveUrl('https://open.spotify.com/playlist/x')
+    expect(r.map((t) => t.id)).toEqual(['a', 'b'])
+    expect(r[0]).toMatchObject({ title: 'Action', artists: ['Nadine', 'Terror'], sourceId: 'spotify', durationSec: 202 })
+  })
+
+  it('playlist: segue a paginacao (next) ate baixar TODAS as faixas', async () => {
+    // http paginado: primeira pagina aponta next para a segunda
+    const pages: Record<string, any> = {
+      'https://api.spotify.com/v1/playlists/big/tracks?limit=100': {
+        items: [{ track: { id: 'a', name: 'A', artists: [], duration_ms: 1 } }],
+        next: 'https://api.spotify.com/v1/playlists/big/tracks?offset=100&limit=100'
+      },
+      'https://api.spotify.com/v1/playlists/big/tracks?offset=100&limit=100': {
+        items: [
+          { track: { id: 'b', name: 'B', artists: [], duration_ms: 1 } },
+          { track: null }, // faixa removida/local: deve ser ignorada
+          { track: { id: 'c', name: 'C', artists: [], duration_ms: 1 } }
+        ],
+        next: null
+      }
+    }
+    const http: HttpClient = {
+      async getJson(url: string) {
+        if (url.includes('/api/token')) return { access_token: 'x', expires_in: 3600 }
+        if (pages[url]) return pages[url]
+        throw new Error(`sem rota para ${url}`)
+      },
+      async postForm() {
+        return { access_token: 'x', expires_in: 3600 }
+      }
+    }
+    const client = new SpotifyClient(creds, http)
+    const r = await client.resolveUrl('https://open.spotify.com/playlist/big')
+    expect(r.map((t) => t.id)).toEqual(['a', 'b', 'c'])
   })
 })

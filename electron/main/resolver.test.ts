@@ -54,6 +54,11 @@ describe('renderTemplate', () => {
     const dirty = { ...meta, title: 'a/b:c' }
     expect(renderTemplate('%title%', dirty)).toBe('a_b_c')
   })
+
+  it('nao deixa separador pendurado quando %track% esta vazio', () => {
+    // template comum com numero da faixa que nao temos -> sem "/ - Titulo" nem "- Titulo"
+    expect(renderTemplate('%artist%/%album%/%track% - %title%', meta)).toBe('Artist/Album/Song')
+  })
 })
 
 describe('outputExtension', () => {

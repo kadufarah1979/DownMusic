@@ -28,12 +28,18 @@ export function outputExtension(format: AudioFormat, rawPath: string): string {
 
 /** Expande placeholders do template com dados da faixa. */
 export function renderTemplate(template: string, meta: TrackMeta): string {
-  return template
+  const filled = template
     .replace(/%artist%/g, sanitize(meta.artists[0] ?? 'Unknown'))
     .replace(/%album%/g, sanitize(meta.album ?? 'Unknown'))
     .replace(/%title%/g, sanitize(meta.title))
     .replace(/%track%/g, '') // TODO: numero da faixa quando disponivel
-    .replace(/\s+-\s+$/g, '')
+
+  // limpa separadores pendurados por segmento (ex: "/ - Titulo" ou "- Titulo"
+  // quando %track% fica vazio) e espacos duplicados.
+  return filled
+    .split('/')
+    .map((seg) => seg.replace(/^\s*-\s+/, '').replace(/\s+-\s+$/, '').replace(/\s{2,}/g, ' ').trim())
+    .join('/')
 }
 
 function sanitize(s: string): string {

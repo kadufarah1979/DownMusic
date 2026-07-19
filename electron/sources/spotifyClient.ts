@@ -4,6 +4,8 @@ import type { TrackMeta } from '../../shared/types'
 export interface HttpClient {
   getJson(url: string, headers: Record<string, string>): Promise<any>
   postForm(url: string, form: Record<string, string>, headers: Record<string, string>): Promise<any>
+  /** GET que retorna texto cru (usado para ler a pagina embed do Spotify). */
+  getText?(url: string, headers?: Record<string, string>): Promise<string>
 }
 
 /** Le o corpo da resposta e monta uma mensagem de erro util (com o motivo do Spotify). */
@@ -40,6 +42,13 @@ export class FetchHttpClient implements HttpClient {
     })
     if (!res.ok) throw await httpError('POST', url, res)
     return res.json()
+  }
+
+  async getText(url: string, headers: Record<string, string> = {}) {
+    // User-Agent de navegador evita bloqueio de bot na pagina embed
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', ...headers } })
+    if (!res.ok) throw await httpError('GET', url, res)
+    return res.text()
   }
 }
 
@@ -83,6 +92,33 @@ export function spotifyTrackToMeta(track: SpotifyTrack): TrackMeta {
 
 const TOKEN_URL = 'https://accounts.spotify.com/api/token'
 const API = 'https://api.spotify.com'
+
+/**
+ * Extrai a lista de faixas da pagina EMBED do Spotify (__NEXT_DATA__).
+ * Funciona sem credenciais e para playlists editoriais (que a Web API bloqueia).
+ * Fornece titulo + artistas (subtitle) + duracao — suficiente para casar no YouTube.
+ */
+export function parseEmbedTracklist(html: string): TrackMeta[] {
+  const m = /<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/.exec(html)
+  if (!m) throw new Error('Nao foi possivel ler a playlist (embed sem __NEXT_DATA__).')
+  const data = JSON.parse(m[1])
+  const list = data?.props?.pageProps?.state?.data?.entity?.trackList
+  if (!Array.isArray(list)) throw new Error('Playlist vazia ou formato de embed inesperado.')
+  return list.map((t: { uri?: string; title?: string; subtitle?: string; duration?: number }) => {
+    const id = String(t.uri ?? '').split(':').pop() || String(t.uri ?? '')
+    return {
+      id,
+      title: String(t.title ?? 'Desconhecido'),
+      artists: String(t.subtitle ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+      durationSec: typeof t.duration === 'number' ? Math.round(t.duration / 1000) : undefined,
+      sourceId: 'spotify' as const,
+      sourceUrl: `https://open.spotify.com/track/${id}`
+    }
+  })
+}
 
 /**
  * Cliente da Web API do Spotify (client-credentials).
@@ -144,26 +180,56 @@ export class SpotifyClient {
   async resolveUrl(url: string): Promise<TrackMeta[]> {
     const parsed = parseSpotifyUrl(url)
     if (!parsed) throw new Error(`URL do Spotify invalida: ${url}`)
-    const headers = await this.authHeaders()
 
     if (parsed.type === 'track') {
-      const t = await this.http.getJson(`${API}/v1/tracks/${parsed.id}`, headers)
+      const t = await this.http.getJson(`${API}/v1/tracks/${parsed.id}`, await this.authHeaders())
       return [spotifyTrackToMeta(t)]
     }
 
     if (parsed.type === 'album') {
+      const headers = await this.authHeaders()
       const album = await this.http.getJson(`${API}/v1/albums/${parsed.id}`, headers)
+      // primeira pagina ja vem embutida; segue o `next` para pegar o resto.
+      const first = album.tracks ?? {}
+      const rest = first.next ? await this.getAllPages(first.next, headers) : []
+      const items: SpotifyTrack[] = [...(first.items ?? []), ...rest]
       // faixas de album vem sem o objeto album; enxertamos nome/capa do album.
-      return (album.tracks?.items ?? []).map((t: SpotifyTrack) =>
-        spotifyTrackToMeta({ ...t, album: { name: album.name, images: album.images } })
-      )
+      return items.map((t) => spotifyTrackToMeta({ ...t, album: { name: album.name, images: album.images } }))
     }
 
-    // playlist: items[].track sao track objects completos
-    const playlist = await this.http.getJson(`${API}/v1/playlists/${parsed.id}`, headers)
-    return (playlist.tracks?.items ?? [])
-      .map((it: { track: SpotifyTrack | null }) => it.track)
-      .filter((t: SpotifyTrack | null): t is SpotifyTrack => !!t)
-      .map(spotifyTrackToMeta)
+    // playlist: tenta a Web API (rica, com ISRC); se falhar (403/404 de playlist
+    // editorial, ou sem credenciais), cai para o embed publico.
+    try {
+      const headers = await this.authHeaders()
+      const items = await this.getAllPages(`${API}/v1/playlists/${parsed.id}/tracks?limit=100`, headers)
+      const tracks = items
+        .map((it: { track?: SpotifyTrack | null }) => it.track)
+        .filter((t): t is SpotifyTrack => !!t)
+        .map(spotifyTrackToMeta)
+      if (tracks.length > 0) return tracks
+      // API respondeu vazio (playlist editorial as vezes retorna 200 sem faixas): tenta embed
+      return await this.resolvePlaylistViaEmbed(parsed.id)
+    } catch {
+      return this.resolvePlaylistViaEmbed(parsed.id)
+    }
+  }
+
+  /** Fallback publico: le a tracklist da pagina embed (sem credenciais). */
+  private async resolvePlaylistViaEmbed(id: string): Promise<TrackMeta[]> {
+    if (!this.http.getText) throw new Error('HttpClient sem suporte a getText para o fallback embed.')
+    const html = await this.http.getText(`https://open.spotify.com/embed/playlist/${id}`)
+    return parseEmbedTracklist(html)
+  }
+
+  /** Segue a paginacao do Spotify (campo `next`) acumulando todos os `items`. */
+  private async getAllPages(firstUrl: string, headers: Record<string, string>): Promise<any[]> {
+    const items: any[] = []
+    let url: string | null = firstUrl
+    while (url) {
+      const page: { items?: any[]; next?: string | null } = await this.http.getJson(url, headers)
+      items.push(...(page.items ?? []))
+      url = page.next ?? null
+    }
+    return items
   }
 }
