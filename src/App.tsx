@@ -3,11 +3,14 @@ import { UrlBar } from './components/UrlBar'
 import { SearchView } from './components/SearchView'
 import { QueueList } from './components/QueueList'
 import { SettingsView } from './components/SettingsView'
+import { TrackSelectList } from './components/TrackSelectList'
+import type { TrackMeta } from '@shared/types'
 
 type Tab = 'download' | 'search' | 'settings'
 
 export function App() {
   const [tab, setTab] = useState<Tab>('download')
+  const [resolved, setResolved] = useState<TrackMeta[]>([])
 
   return (
     <div className="flex h-screen flex-col bg-neutral-900 text-neutral-100">
@@ -23,7 +26,15 @@ export function App() {
       <main className="flex flex-1 flex-col overflow-hidden">
         {tab === 'download' && (
           <div className="flex flex-1 flex-col overflow-hidden">
-            <UrlBar />
+            <UrlBar onResolved={setResolved} />
+            {resolved.length > 0 && (
+              <div className="border-b border-neutral-800 p-4">
+                <p className="mb-2 text-xs text-neutral-400">
+                  {resolved.length} faixa(s) resolvida(s) — desmarque o que nao quer e enfileire:
+                </p>
+                <TrackSelectList tracks={resolved} onEnqueued={() => setResolved([])} />
+              </div>
+            )}
             <QueueList />
           </div>
         )}

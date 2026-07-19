@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api } from '../ipc'
-import type { SearchGroup, SourceId, TrackMeta } from '@shared/types'
+import { TrackSelectList } from './TrackSelectList'
+import type { SearchGroup, SourceId } from '@shared/types'
 
 /** Plataformas pesquisaveis (Bandcamp fica de fora — yt-dlp nao busca nele). */
 const PLATFORMS: { id: SourceId; label: string }[] = [
@@ -82,49 +83,17 @@ export function SearchView() {
 function GroupSection({ group, title }: { group: SearchGroup; title: string }) {
   return (
     <section>
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-neutral-200">
-          {title} <span className="text-neutral-500">({group.tracks.length})</span>
-        </h2>
-        {group.tracks.length > 0 && (
-          <button
-            onClick={() => api.enqueue(group.tracks)}
-            className="rounded bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600"
-          >
-            Enfileirar todos
-          </button>
-        )}
-      </div>
+      <h2 className="mb-2 text-sm font-semibold text-neutral-200">
+        {title} <span className="text-neutral-500">({group.tracks.length})</span>
+      </h2>
 
       {group.error ? (
         <p className="text-sm text-red-400">{group.error}</p>
       ) : group.tracks.length === 0 ? (
         <p className="text-sm text-neutral-500">Nenhum resultado.</p>
       ) : (
-        <ul className="space-y-2">
-          {group.tracks.map((t) => (
-            <TrackRow key={`${t.sourceId}:${t.id}`} track={t} />
-          ))}
-        </ul>
+        <TrackSelectList tracks={group.tracks} />
       )}
     </section>
-  )
-}
-
-function TrackRow({ track }: { track: TrackMeta }) {
-  return (
-    <li className="flex items-center justify-between rounded bg-neutral-800 p-3">
-      <span className="text-sm">
-        {track.artists.join(', ')}
-        {track.artists.length ? ' — ' : ''}
-        {track.title}
-      </span>
-      <button
-        onClick={() => api.enqueue([track])}
-        className="rounded bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600"
-      >
-        +
-      </button>
-    </li>
   )
 }

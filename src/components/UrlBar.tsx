@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { api } from '../ipc'
+import type { TrackMeta } from '@shared/types'
 
-/** Cola um link, resolve as faixas e enfileira para download. */
-export function UrlBar() {
+/** Cola um link, resolve as faixas e entrega para selecao (nao enfileira direto). */
+export function UrlBar({ onResolved }: { onResolved: (tracks: TrackMeta[]) => void }) {
   const [url, setUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -13,7 +14,7 @@ export function UrlBar() {
     setError(null)
     try {
       const tracks = await api.resolve(url.trim())
-      await api.enqueue(tracks)
+      onResolved(tracks)
       setUrl('')
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -29,7 +30,7 @@ export function UrlBar() {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
-          placeholder="Cole um link (Spotify, YouTube, Bandcamp, SoundCloud)"
+          placeholder="Cole um link (Spotify, Deezer, YouTube, Bandcamp, SoundCloud)"
           className="flex-1 rounded bg-neutral-800 px-3 py-2 text-sm outline-none placeholder:text-neutral-500"
         />
         <button
@@ -37,7 +38,7 @@ export function UrlBar() {
           disabled={busy}
           className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium disabled:opacity-50"
         >
-          {busy ? '...' : 'Baixar'}
+          {busy ? '...' : 'Resolver'}
         </button>
       </div>
       {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
