@@ -13,6 +13,7 @@ import { YouTubeSource } from '../sources/youtube'
 import { BandcampSource } from '../sources/bandcamp'
 import { SoundCloudSource } from '../sources/soundcloud'
 import { DeezerSource } from '../sources/deezer'
+import { DeezerClient } from '../sources/deezerClient'
 
 /** Monta o grafo de dependencias (composition root). */
 function buildCore() {
@@ -29,7 +30,7 @@ function buildCore() {
     new YouTubeSource(ytdlp),
     new BandcampSource(ytdlp),
     new SoundCloudSource(ytdlp),
-    new DeezerSource() // fase 2 (stub)
+    new DeezerSource(ytdlp, new DeezerClient())
   ]
 
   const resolver = new Resolver(sources)

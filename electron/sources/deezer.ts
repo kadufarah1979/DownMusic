@@ -1,28 +1,42 @@
 import type { Source, ProgressFn } from './types'
 import type { TrackMeta, FetchOptions, AudioResult } from '../../shared/types'
+import type { YtDlpEngine } from '../engines/ytdlp'
+import { parseDeezerUrl, type DeezerClient } from './deezerClient'
+import { join } from 'node:path'
 
 /**
- * FASE 2 (stub): fonte Deezer.
- * Motor proprio: autenticacao por ARL token, API interna do Deezer,
- * download cifrado (Blowfish, chave = MD5 do id da faixa) com decrypt local.
- * NAO implementado no MVP — presente apenas para fixar a interface.
+ * Fonte Deezer (metadados -> audio do YouTube):
+ * - search/resolve usam a API PUBLICA do Deezer (sem login), via DeezerClient.
+ * - fetchAudio casa a faixa no YouTube (por ISRC ou "artista titulo") e baixa
+ *   o audio publico via yt-dlp — mesma estrategia do Spotify.
+ * O download nativo (ARL + decrypt FLAC) permanece como possivel fase 2.
  */
 export class DeezerSource implements Source {
   readonly id = 'deezer' as const
 
+  constructor(
+    private readonly ytdlp: YtDlpEngine,
+    private readonly client: DeezerClient
+  ) {}
+
   matches(url: string): boolean {
-    return /deezer\.com/i.test(url)
+    return parseDeezerUrl(url) !== null
   }
 
-  async search(): Promise<TrackMeta[]> {
-    throw new Error('Fonte Deezer sera implementada na fase 2.')
+  async search(query: string): Promise<TrackMeta[]> {
+    return this.client.search(query)
   }
 
-  async resolve(): Promise<TrackMeta[]> {
-    throw new Error('Fonte Deezer sera implementada na fase 2.')
+  async resolve(url: string): Promise<TrackMeta[]> {
+    return this.client.resolveUrl(url)
   }
 
-  async fetchAudio(_t: TrackMeta, _o: FetchOptions, _p: ProgressFn): Promise<AudioResult> {
-    throw new Error('Fonte Deezer sera implementada na fase 2.')
+  async fetchAudio(track: TrackMeta, opts: FetchOptions, onProgress: ProgressFn): Promise<AudioResult> {
+    const query = track.isrc ?? `${track.artists.join(' ')} ${track.title}`
+    const ytUrl = await this.ytdlp.searchBest(query)
+    if (!ytUrl) throw new Error(`Nenhum resultado no YouTube para: ${query}`)
+    const outTemplate = join(opts.outputDir, `${track.id}.%(ext)s`)
+    const path = await this.ytdlp.downloadAudio(ytUrl, outTemplate, onProgress)
+    return { rawPath: path }
   }
 }
