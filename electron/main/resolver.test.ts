@@ -96,6 +96,16 @@ describe('renderTemplate', () => {
     // template comum com numero da faixa que nao temos -> sem "/ - Titulo" nem "- Titulo"
     expect(renderTemplate('%artist%/%album%/%track% - %title%', meta)).toBe('Artist/Album/Song')
   })
+
+  it('omite a pasta do album quando o album e desconhecido (sem "Unknown" nem vazio)', () => {
+    const semAlbum = { ...meta, album: undefined }
+    expect(renderTemplate('%artist%/%album%/%track% - %title%', semAlbum)).toBe('Artist/Song')
+  })
+
+  it('sem artista nem album -> arquivo direto (so o titulo)', () => {
+    const so = { ...meta, artists: [], album: undefined }
+    expect(renderTemplate('%artist%/%album%/%track% - %title%', so)).toBe('Song')
+  })
 })
 
 describe('outputExtension', () => {

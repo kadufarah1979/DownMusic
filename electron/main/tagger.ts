@@ -54,17 +54,20 @@ export function outputExtension(format: AudioFormat, rawPath: string): string {
 
 /** Expande placeholders do template com dados da faixa. */
 export function renderTemplate(template: string, meta: TrackMeta): string {
+  // artista/album ausentes viram vazio (nao "Unknown") — a pasta correspondente
+  // e omitida em vez de criar um diretorio "Unknown".
   const filled = template
-    .replace(/%artist%/g, sanitize(meta.artists[0] ?? 'Unknown'))
-    .replace(/%album%/g, sanitize(meta.album ?? 'Unknown'))
+    .replace(/%artist%/g, sanitize(meta.artists[0] ?? ''))
+    .replace(/%album%/g, sanitize(meta.album ?? ''))
     .replace(/%title%/g, sanitize(meta.title))
     .replace(/%track%/g, '') // TODO: numero da faixa quando disponivel
 
-  // limpa separadores pendurados por segmento (ex: "/ - Titulo" ou "- Titulo"
-  // quando %track% fica vazio) e espacos duplicados.
+  // limpa separadores pendurados por segmento e DESCARTA segmentos vazios
+  // (ex: album desconhecido nao vira pasta).
   return filled
     .split('/')
     .map((seg) => seg.replace(/^\s*-\s+/, '').replace(/\s+-\s+$/, '').replace(/\s{2,}/g, ' ').trim())
+    .filter((seg) => seg.length > 0)
     .join('/')
 }
 
