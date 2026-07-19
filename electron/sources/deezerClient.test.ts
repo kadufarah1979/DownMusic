@@ -68,18 +68,6 @@ describe('DeezerClient.search', () => {
   })
 })
 
-describe('DeezerClient.searchPlaylists', () => {
-  it('mapeia playlists (url por id, titulo, nb_tracks)', async () => {
-    const http = fakeHttp({
-      '/search/playlist': {
-        data: [{ id: 1503415633, title: 'Reggae Hits', nb_tracks: 50 }]
-      }
-    })
-    const r = await new DeezerClient(http).searchPlaylists('reggae hits')
-    expect(r).toEqual([{ url: 'https://www.deezer.com/playlist/1503415633', title: 'Reggae Hits', trackCount: 50 }])
-  })
-})
-
 describe('DeezerClient.resolveUrl', () => {
   it('track', async () => {
     const http = fakeHttp({

@@ -20,20 +20,6 @@ export interface TrackMeta {
   playlist?: string
 }
 
-/** Candidata para completar uma playlist truncada, achada em outra plataforma. */
-export interface PlaylistCompletion {
-  platform: SourceId
-  url: string
-  name: string
-  trackCount: number
-  /** 0..100 — quanto a candidata bate com as faixas conhecidas. */
-  overlapPct: number
-  /** Quantas faixas novas ela adicionaria. */
-  addedCount: number
-  /** As faixas novas (para o usuario conferir antes de importar). */
-  extras: TrackMeta[]
-}
-
 /** Uma playlist cadastrada para sincronizacao manual. */
 export interface PlaylistSubscription {
   url: string

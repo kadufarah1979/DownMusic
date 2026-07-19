@@ -5,7 +5,6 @@ import type { QueueManager } from './queue'
 import type { ConfigStore } from './config'
 import type { HistoryStore } from './history'
 import type { PlaylistService } from './playlists'
-import type { PlaylistCompleter } from './playlistCompleter'
 
 /**
  * Canais IPC entre renderer e main. Nomes centralizados aqui e no preload.
@@ -29,8 +28,7 @@ export const CH = {
   playlistAdd: 'playlist:add',
   playlistRemove: 'playlist:remove',
   playlistSync: 'playlist:sync',
-  playlistSyncAll: 'playlist:syncAll',
-  playlistFindCompletions: 'playlist:findCompletions'
+  playlistSyncAll: 'playlist:syncAll'
 } as const
 
 export function registerIpc(
@@ -41,10 +39,9 @@ export function registerIpc(
     config: ConfigStore
     history: HistoryStore
     playlists: PlaylistService
-    completer: PlaylistCompleter
   }
 ): void {
-  const { resolver, queue, config, history, playlists, completer } = deps
+  const { resolver, queue, config, history, playlists } = deps
 
   ipcMain.handle(CH.resolve, (_e, url: string) => resolver.resolve(url))
   ipcMain.handle(CH.search, (_e, query: string, sourceIds: string[]) =>
@@ -99,7 +96,6 @@ export function registerIpc(
   ipcMain.handle(CH.playlistRemove, (_e, url: string) => playlists.remove(url))
   ipcMain.handle(CH.playlistSync, (_e, url: string) => playlists.sync(url))
   ipcMain.handle(CH.playlistSyncAll, () => playlists.syncAll())
-  ipcMain.handle(CH.playlistFindCompletions, (_e, url: string) => completer.findCompletions(url))
 
   // Push de atualizacoes de progresso da fila para o renderer.
   queue.on('update', (item) => {

@@ -1,13 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type {
-  AppConfig,
-  QueueItem,
-  TrackMeta,
-  SearchGroup,
-  SourceId,
-  PlaylistSubscription,
-  PlaylistCompletion
-} from '../../shared/types'
+import type { AppConfig, QueueItem, TrackMeta, SearchGroup, SourceId, PlaylistSubscription } from '../../shared/types'
 import type { HistoryEntry } from '../../shared/history'
 
 /** Nomes de canais espelhados de main/ipc.ts. */
@@ -30,8 +22,7 @@ const CH = {
   playlistAdd: 'playlist:add',
   playlistRemove: 'playlist:remove',
   playlistSync: 'playlist:sync',
-  playlistSyncAll: 'playlist:syncAll',
-  playlistFindCompletions: 'playlist:findCompletions'
+  playlistSyncAll: 'playlist:syncAll'
 } as const
 
 /** API tipada exposta ao renderer via contextBridge. */
@@ -57,8 +48,6 @@ const api = {
   syncPlaylist: (url: string): Promise<{ added: number; total: number }> =>
     ipcRenderer.invoke(CH.playlistSync, url),
   syncAllPlaylists: (): Promise<{ added: number; total: number }> => ipcRenderer.invoke(CH.playlistSyncAll),
-  findCompletions: (url: string): Promise<PlaylistCompletion[]> =>
-    ipcRenderer.invoke(CH.playlistFindCompletions, url),
   onQueueUpdate: (cb: (item: QueueItem) => void): (() => void) => {
     const listener = (_e: unknown, item: QueueItem) => cb(item)
     ipcRenderer.on(CH.queueUpdate, listener)
