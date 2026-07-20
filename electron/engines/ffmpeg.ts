@@ -153,4 +153,9 @@ export class FfmpegEngine {
     await this.runner.run(this.bin, buildConvertArgs(inPath, outPath, format, quality, meta, coverPath))
     return outPath
   }
+
+  /** Executa o remux/retag com os args já montados (buildRetagArgs). */
+  async retag(_inPath: string, _outPath: string, _coverPath: string | undefined, args: string[]): Promise<void> {
+    await this.runner.run(this.bin, args)
+  }
 }
