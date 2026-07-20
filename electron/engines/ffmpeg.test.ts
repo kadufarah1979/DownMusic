@@ -1,6 +1,27 @@
 import { describe, it, expect, vi } from 'vitest'
-import { qualityToBitrate, buildConvertArgs, FfmpegEngine, type ProcRunner } from './ffmpeg'
+import { qualityToBitrate, buildConvertArgs, buildRetagArgs, FfmpegEngine, type ProcRunner } from './ffmpeg'
 import type { TrackMeta } from '../../shared/types'
+
+describe('buildRetagArgs', () => {
+  it('remux sem reencode (-c copy) e grava tags novas', () => {
+    const args = buildRetagArgs('/in.mp3', '/out.mp3', { genre: 'House', year: '2020', label: 'Selo' })
+    expect(args).toContain('-c')
+    expect(args[args.indexOf('-c') + 1]).toBe('copy')
+    expect(args).toContain('genre=House')
+    expect(args).toContain('date=2020')
+    expect(args).toContain('publisher=Selo')
+    expect(args).not.toContain('libmp3lame') // não reencoda
+    expect(args[args.length - 1]).toBe('/out.mp3')
+  })
+
+  it('embute capa local mantendo o áudio com -c:a copy', () => {
+    const args = buildRetagArgs('/in.mp3', '/out.mp3', { genre: 'House' }, '/tmp/c.jpg')
+    expect(args.filter((a) => a === '-i')).toHaveLength(2)
+    expect(args).toContain('attached_pic')
+    expect(args[args.indexOf('-c:a') + 1]).toBe('copy')
+    expect(args).toContain('mjpeg')
+  })
+})
 
 const meta: TrackMeta = {
   id: '1',

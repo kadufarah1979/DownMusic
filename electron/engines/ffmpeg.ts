@@ -90,6 +90,39 @@ export function buildConvertArgs(
   return args
 }
 
+/** Escreve tags/capa num arquivo existente SEM reencodar o áudio (-c copy). */
+export function buildRetagArgs(
+  inPath: string,
+  outPath: string,
+  tags: Partial<TrackMeta>,
+  coverPath?: string
+): string[] {
+  const args: string[] = ['-y', '-i', inPath]
+  if (coverPath) args.push('-i', coverPath)
+
+  if (coverPath) {
+    args.push('-map', '0:a', '-map', '1:v', '-c:a', 'copy', '-c:v', 'mjpeg', '-disposition:v', 'attached_pic')
+  } else {
+    args.push('-map', '0', '-c', 'copy')
+  }
+
+  const tag = (k: string, v?: string | number) => {
+    if (v !== undefined && v !== null && `${v}` !== '') args.push('-metadata', `${k}=${v}`)
+  }
+  tag('title', tags.title)
+  tag('artist', tags.artists?.join(', '))
+  tag('album_artist', tags.artists?.[0])
+  tag('album', tags.album)
+  tag('genre', tags.genre)
+  tag('date', tags.year)
+  tag('track', tags.trackNumber)
+  tag('disc', tags.discNumber)
+  tag('publisher', tags.label)
+
+  args.push(outPath)
+  return args
+}
+
 /**
  * Wrapper sobre o binario externo `ffmpeg`.
  * Converte para o formato-alvo e embute tags + capa.
