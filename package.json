@@ -45,6 +45,7 @@
   "dependencies": {
     "electron-store": "^8.2.0",
     "execa": "^8.0.1",
+    "music-metadata": "^7.14.0",
     "p-queue": "^8.0.1"
   },
   "devDependencies": {
