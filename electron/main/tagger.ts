@@ -1,7 +1,6 @@
 import { join, dirname, extname } from 'node:path'
-import { tmpdir } from 'node:os'
-import { randomUUID } from 'node:crypto'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, rm } from 'node:fs/promises'
+import { downloadCover } from './cover'
 import type { FfmpegEngine } from '../engines/ffmpeg'
 import type { AudioFormat, AudioResult, FetchOptions, TrackMeta } from '../../shared/types'
 
@@ -30,21 +29,6 @@ export class Tagger {
       if (raw.rawPath !== outPath) await rm(raw.rawPath, { force: true })
     }
     return outPath
-  }
-}
-
-/** Baixa a capa (http/https) para um arquivo temporario; retorna undefined se falhar. */
-async function downloadCover(url?: string): Promise<string | undefined> {
-  if (!url || !/^https?:\/\//i.test(url)) return undefined
-  try {
-    const res = await fetch(url)
-    if (!res.ok) return undefined
-    const buf = Buffer.from(await res.arrayBuffer())
-    const file = join(tmpdir(), `downmusic-cover-${randomUUID()}.jpg`)
-    await writeFile(file, buf)
-    return file
-  } catch {
-    return undefined
   }
 }
 
