@@ -60,6 +60,7 @@ export function renderTemplate(template: string, meta: TrackMeta): string {
   // e omitida em vez de criar um diretorio "Unknown".
   const track = typeof meta.trackNumber === 'number' ? String(meta.trackNumber).padStart(2, '0') : ''
   const filled = template
+    .replace(/%genre%/g, sanitize(meta.genre ?? ''))
     .replace(/%artist%/g, sanitize(meta.artists[0] ?? ''))
     .replace(/%album%/g, sanitize(meta.album ?? ''))
     .replace(/%title%/g, sanitize(meta.title))
