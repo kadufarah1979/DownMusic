@@ -10,9 +10,19 @@ interface BuildArgs {
   duplicates: string[] // paths a quarentenar (others de todos os grupos)
 }
 
-/** Adapta uma faixa lida para o formato que o renderTemplate espera. */
-function metaForTemplate(t: ScannedTrack): TrackMeta {
-  return { id: t.path, title: t.title ?? '', artists: t.artists, album: t.album, genre: t.genre, trackNumber: t.trackNumber, sourceId: 'youtube', sourceUrl: '' }
+/** Adapta uma faixa lida (com tags enriquecidas mescladas) ao formato do renderTemplate. */
+function metaForTemplate(t: ScannedTrack, filled: Partial<TrackMeta>): TrackMeta {
+  return {
+    id: t.path,
+    title: t.title ?? '',
+    artists: t.artists,
+    album: t.album,
+    // usa o gênero/faixa enriquecido quando o original estava faltando (organiza na pasta certa)
+    genre: t.genre ?? filled.genre,
+    trackNumber: t.trackNumber ?? filled.trackNumber,
+    sourceId: 'youtube',
+    sourceUrl: ''
+  }
 }
 
 /** Calcula os movimentos/renomeações a partir do template. Não toca no disco. */
@@ -28,7 +38,7 @@ export function buildPlan({ rootDir, template, inputs, duplicates }: BuildArgs):
       entries.push({ from: track.path, to: join(rootDir, DUP_DIR, basename(track.path)), needsRetag: false, duplicate: true })
       continue
     }
-    const rel = renderTemplate(template, metaForTemplate(track))
+    const rel = renderTemplate(template, metaForTemplate(track, filled))
     const name = rel || basename(track.path, ext) // fallback quando o template renderiza vazio
     const to = join(rootDir, `${name}${ext}`)
     const needsRetag = Object.keys(filled).length > 0

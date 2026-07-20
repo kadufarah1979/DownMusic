@@ -21,6 +21,12 @@ describe('buildPlan', () => {
     expect(p.entries[0].tags).toEqual({ year: '2020' })
   })
 
+  it('gênero DESCOBERTO via enriquecimento define a pasta', () => {
+    const p = buildPlan({ rootDir: '/root', template: TPL, inputs: [inp(st({ path: '/in/x.mp3', genre: undefined }), { genre: 'Electro' })], duplicates: [] })
+    expect(p.entries[0].to).toBe('/root/Electro/A - Song.mp3')
+    expect(p.entries[0].needsRetag).toBe(true)
+  })
+
   it('sem gênero cai na raiz (sem pasta de gênero)', () => {
     const p = buildPlan({ rootDir: '/root', template: TPL, inputs: [inp(st({ genre: undefined }))], duplicates: [] })
     expect(p.entries[0].to).toBe('/root/A - Song.mp3')
