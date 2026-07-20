@@ -6,6 +6,8 @@ import type { QueueManager } from './queue'
 import type { ConfigStore } from './config'
 import type { HistoryStore } from './history'
 import type { PlaylistService } from './playlists'
+import type { LibraryService } from './library'
+import type { OrganizationPlan } from '../../shared/library'
 
 /**
  * Canais IPC entre renderer e main. Nomes centralizados aqui e no preload.
@@ -31,7 +33,11 @@ export const CH = {
   playlistSync: 'playlist:sync',
   playlistSyncAll: 'playlist:syncAll',
   playlistClear: 'playlist:clear',
-  downloadsClear: 'downloads:clear'
+  downloadsClear: 'downloads:clear',
+  libraryScanAnalyze: 'library:scanAnalyze',
+  libraryPlan: 'library:plan',
+  libraryApply: 'library:apply',
+  libraryProgress: 'library:progress'
 } as const
 
 export function registerIpc(
@@ -42,9 +48,17 @@ export function registerIpc(
     config: ConfigStore
     history: HistoryStore
     playlists: PlaylistService
+    library: LibraryService
   }
 ): void {
-  const { resolver, queue, config, history, playlists } = deps
+  const { resolver, queue, config, history, playlists, library } = deps
+
+  ipcMain.handle(CH.libraryScanAnalyze, (_e, dir: string) => library.scanAndAnalyze(dir))
+  ipcMain.handle(CH.libraryPlan, (_e, dir: string, template: string) => library.plan(dir, template))
+  ipcMain.handle(CH.libraryApply, (_e, plan: OrganizationPlan) => library.apply(plan))
+  library.executor.on('progress', (p: unknown) => {
+    if (!win.isDestroyed()) win.webContents.send(CH.libraryProgress, p)
+  })
 
   ipcMain.handle(CH.resolve, (_e, url: string) => resolver.resolve(url))
   ipcMain.handle(CH.search, (_e, query: string, sourceIds: string[]) =>

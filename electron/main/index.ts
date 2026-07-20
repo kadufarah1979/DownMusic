@@ -18,6 +18,10 @@ import { SoundCloudSource } from '../sources/soundcloud'
 import { DeezerSource } from '../sources/deezer'
 import { DeezerClient } from '../sources/deezerClient'
 import { MetadataEnricher } from './metadataEnricher'
+import { LibraryScanner, MusicMetadataReader } from './libraryScanner'
+import { OrganizationExecutor } from './organizationExecutor'
+import { LibraryService } from './library'
+import { homedir } from 'node:os'
 
 /** Monta o grafo de dependencias (composition root). */
 function buildCore() {
@@ -54,7 +58,15 @@ function buildCore() {
 
   const playlists = new PlaylistService(new PlaylistStore(), resolver, history, queue)
 
-  return { config, resolver, queue, history, playlists, ytdlp, ffmpeg }
+  // organizador de diretorio: varre, analisa, enriquece e reorganiza p/ Rekordbox
+  const library = new LibraryService(
+    new LibraryScanner(new MusicMetadataReader()),
+    new OrganizationExecutor(ffmpeg),
+    enricher,
+    { home: homedir() }
+  )
+
+  return { config, resolver, queue, history, playlists, library, ytdlp, ffmpeg }
 }
 
 function createWindow(core: ReturnType<typeof buildCore>): void {

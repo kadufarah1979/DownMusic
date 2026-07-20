@@ -1,6 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { AppConfig, QueueItem, TrackMeta, SearchGroup, SourceId, PlaylistSubscription } from '../../shared/types'
 import type { HistoryEntry } from '../../shared/history'
+import type { AnalysisReport, OrganizationPlan } from '../../shared/library'
+
+type ApplyResult = { moved: number; retagged: number; quarantined: number; failed: { path: string; error: string }[] }
+type LibraryProgress = { done: number; total: number; current: string }
 
 /** Nomes de canais espelhados de main/ipc.ts. */
 const CH = {
@@ -24,7 +28,11 @@ const CH = {
   playlistSync: 'playlist:sync',
   playlistSyncAll: 'playlist:syncAll',
   playlistClear: 'playlist:clear',
-  downloadsClear: 'downloads:clear'
+  downloadsClear: 'downloads:clear',
+  libraryScanAnalyze: 'library:scanAnalyze',
+  libraryPlan: 'library:plan',
+  libraryApply: 'library:apply',
+  libraryProgress: 'library:progress'
 } as const
 
 /** API tipada exposta ao renderer via contextBridge. */
@@ -58,6 +66,16 @@ const api = {
     const listener = (_e: unknown, item: QueueItem) => cb(item)
     ipcRenderer.on(CH.queueUpdate, listener)
     return () => ipcRenderer.removeListener(CH.queueUpdate, listener)
+  },
+  libraryScanAnalyze: (dir: string): Promise<{ report: AnalysisReport; unreadable: string[] }> =>
+    ipcRenderer.invoke(CH.libraryScanAnalyze, dir),
+  libraryPlan: (dir: string, template: string): Promise<OrganizationPlan> =>
+    ipcRenderer.invoke(CH.libraryPlan, dir, template),
+  libraryApply: (plan: OrganizationPlan): Promise<ApplyResult> => ipcRenderer.invoke(CH.libraryApply, plan),
+  onLibraryProgress: (cb: (p: LibraryProgress) => void): (() => void) => {
+    const listener = (_e: unknown, p: LibraryProgress) => cb(p)
+    ipcRenderer.on(CH.libraryProgress, listener)
+    return () => ipcRenderer.removeListener(CH.libraryProgress, listener)
   }
 }
 
