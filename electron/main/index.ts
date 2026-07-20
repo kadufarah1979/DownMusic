@@ -17,6 +17,7 @@ import { BandcampSource } from '../sources/bandcamp'
 import { SoundCloudSource } from '../sources/soundcloud'
 import { DeezerSource } from '../sources/deezer'
 import { DeezerClient } from '../sources/deezerClient'
+import { MetadataEnricher } from './metadataEnricher'
 
 /** Monta o grafo de dependencias (composition root). */
 function buildCore() {
@@ -40,7 +41,10 @@ function buildCore() {
 
   const resolver = new Resolver(sources)
   const tagger = new Tagger(ffmpeg)
-  const queue = new QueueManager(resolver, tagger, cfg)
+  // enriquece cada faixa com metadados do Deezer (genero/ano/label/nº faixa/capa)
+  // para tags ID3 ricas e organizacao por genero (Rekordbox).
+  const enricher = new MetadataEnricher()
+  const queue = new QueueManager(resolver, tagger, cfg, enricher.enrich)
   const history = new HistoryStore()
 
   // registra no historico quando um download conclui

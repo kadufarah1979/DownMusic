@@ -72,9 +72,19 @@ export function buildConvertArgs(
   }
   args.push(...audioCodecArgs(format, quality))
 
-  args.push('-metadata', `title=${meta.title}`)
-  args.push('-metadata', `artist=${meta.artists.join(', ')}`)
-  if (meta.album) args.push('-metadata', `album=${meta.album}`)
+  // tags ID3 (o Rekordbox le na importacao). So escreve o que existe.
+  const tag = (k: string, v?: string | number) => {
+    if (v !== undefined && v !== null && `${v}` !== '') args.push('-metadata', `${k}=${v}`)
+  }
+  tag('title', meta.title)
+  tag('artist', meta.artists.join(', '))
+  tag('album_artist', meta.artists[0])
+  tag('album', meta.album)
+  tag('genre', meta.genre)
+  tag('date', meta.year)
+  tag('track', meta.trackNumber)
+  tag('disc', meta.discNumber)
+  tag('publisher', meta.label) // -> TPUB (campo "Label" no Rekordbox)
 
   args.push(outPath)
   return args

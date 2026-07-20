@@ -18,6 +18,12 @@ export interface TrackMeta {
   sourceUrl: string
   /** Nome da playlist de origem (quando a faixa veio de um resolve de playlist). */
   playlist?: string
+  // metadados enriquecidos (Deezer) para tags ID3 / organizacao (Rekordbox):
+  genre?: string
+  year?: string
+  label?: string
+  trackNumber?: number
+  discNumber?: number
 }
 
 /** Uma playlist cadastrada para sincronizacao manual. */

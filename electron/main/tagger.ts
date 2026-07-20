@@ -15,7 +15,9 @@ export class Tagger {
   async finalize(meta: TrackMeta, raw: AudioResult, opts: FetchOptions): Promise<string> {
     const rel = renderTemplate(opts.nameTemplate, meta)
     const ext = outputExtension(opts.format, raw.rawPath)
-    const outPath = join(opts.outputDir, `${rel}.${ext}`)
+    // organiza sob a pasta do genero (Rekordbox) quando conhecido
+    const genreDir = meta.genre?.trim() ? sanitize(meta.genre) : ''
+    const outPath = join(opts.outputDir, genreDir, `${rel}.${ext}`)
     await mkdir(dirname(outPath), { recursive: true })
 
     // baixa a capa localmente (nunca deixa o ffmpeg buscar por HTTP/TLS)
@@ -56,11 +58,12 @@ export function outputExtension(format: AudioFormat, rawPath: string): string {
 export function renderTemplate(template: string, meta: TrackMeta): string {
   // artista/album ausentes viram vazio (nao "Unknown") — a pasta correspondente
   // e omitida em vez de criar um diretorio "Unknown".
+  const track = typeof meta.trackNumber === 'number' ? String(meta.trackNumber).padStart(2, '0') : ''
   const filled = template
     .replace(/%artist%/g, sanitize(meta.artists[0] ?? ''))
     .replace(/%album%/g, sanitize(meta.album ?? ''))
     .replace(/%title%/g, sanitize(meta.title))
-    .replace(/%track%/g, '') // TODO: numero da faixa quando disponivel
+    .replace(/%track%/g, track)
 
   // limpa separadores pendurados por segmento e DESCARTA segmentos vazios
   // (ex: album desconhecido nao vira pasta).

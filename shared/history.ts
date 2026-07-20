@@ -11,6 +11,8 @@ export interface HistoryEntry {
   sourceId: SourceId
   /** Nome da playlist de origem (quando a faixa veio de uma playlist). */
   playlist?: string
+  /** Genero (do Deezer) — usado para agrupar o historico. */
+  genre?: string
   /** ISO 8601 de quando baixou. */
   downloadedAt: string
   /** Caminho no momento do download (pode nao existir mais). */
@@ -31,6 +33,7 @@ export function entryFromTrack(track: TrackMeta, outputPath: string, downloadedA
     nameKey: nameKey(track),
     sourceId: track.sourceId,
     playlist: track.playlist,
+    genre: track.genre,
     downloadedAt,
     outputPath
   }

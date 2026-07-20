@@ -86,6 +86,48 @@ describe('QueueManager.enqueue com pasta de destino (override por lista)', () =>
   })
 })
 
+describe('QueueManager enrich (metadados Deezer)', () => {
+  it('enriquece a faixa 1x antes do finalize (aplica no meta) e nao re-enriquece no retry', async () => {
+    let ok = false
+    let enrichCalls = 0
+    let seenGenre: string | undefined
+    const source = {
+      id: 'youtube' as const, matches: () => false, search: async () => [], resolve: async () => [],
+      fetchAudio: async () => { if (!ok) throw new Error('x'); return { rawPath: '/r' } }
+    }
+    const resolver = { getSource: () => source } as any
+    const tagger = { finalize: async (m: TrackMeta) => { seenGenre = m.genre; return '/out.mp3' } } as any
+    const cfg = { ...DEFAULT_CONFIG, concurrency: 1, maxRetries: 0, outputDir: '/tmp' }
+    const enrich = async () => { enrichCalls++; return { genre: 'Techno', trackNumber: 3 } }
+    const q = new QueueManager(resolver, tagger, cfg, enrich)
+
+    const item = q.enqueue(track('a'))
+    await waitFor(q, item.itemId, 'error') // falhou o download, mas enrich ja rodou
+    ok = true
+    q.retry(item.itemId)
+    await waitFor(q, item.itemId, 'done')
+
+    expect(enrichCalls).toBe(1) // enriquecido uma unica vez
+    expect(seenGenre).toBe('Techno') // meta enriquecido chega ao finalize
+    expect(q.list()[0].meta.trackNumber).toBe(3)
+  })
+
+  it('falha do enrich nao quebra o download', async () => {
+    const source = {
+      id: 'youtube' as const, matches: () => false, search: async () => [], resolve: async () => [],
+      fetchAudio: async () => ({ rawPath: '/r' })
+    }
+    const resolver = { getSource: () => source } as any
+    const tagger = { finalize: async () => '/out.mp3' } as any
+    const cfg = { ...DEFAULT_CONFIG, concurrency: 1, maxRetries: 0, outputDir: '/tmp' }
+    const enrich = async () => { throw new Error('deezer down') }
+    const q = new QueueManager(resolver, tagger, cfg, enrich)
+    const item = q.enqueue(track('a'))
+    await waitFor(q, item.itemId, 'done')
+    expect(q.list()[0].state).toBe('done')
+  })
+})
+
 describe('QueueManager.retryFailed', () => {
   it('retenta todos os itens com erro', async () => {
     let ok = false

@@ -9,7 +9,12 @@ const meta: TrackMeta = {
   album: 'Album',
   coverUrl: 'https://img/cover.jpg',
   sourceId: 'youtube',
-  sourceUrl: 'x'
+  sourceUrl: 'x',
+  genre: 'Reggae',
+  year: '2001',
+  label: 'Selo X',
+  trackNumber: 4,
+  discNumber: 1
 }
 
 describe('qualityToBitrate', () => {
@@ -34,6 +39,24 @@ describe('buildConvertArgs', () => {
     expect(args).toContain('album=Album')
     expect(args[args.length - 1]).toBe('/out.mp3')
     expect(args[0]).toBe('-y')
+  })
+
+  it('grava tags ricas p/ Rekordbox (genero, ano, faixa, disco, label, album_artist)', () => {
+    const args = buildConvertArgs('/in.webm', '/out.mp3', 'mp3', '320', meta)
+    expect(args).toContain('genre=Reggae')
+    expect(args).toContain('date=2001')
+    expect(args).toContain('track=4')
+    expect(args).toContain('disc=1')
+    expect(args).toContain('publisher=Selo X')
+    expect(args).toContain('album_artist=Artista A')
+  })
+
+  it('omite tags ausentes', () => {
+    const bare: TrackMeta = { id: '1', title: 'T', artists: ['A'], sourceId: 'youtube', sourceUrl: '' }
+    const args = buildConvertArgs('/in.webm', '/out.mp3', 'mp3', '320', bare)
+    expect(args.some((a) => a.startsWith('genre='))).toBe(false)
+    expect(args.some((a) => a.startsWith('date='))).toBe(false)
+    expect(args.some((a) => a.startsWith('publisher='))).toBe(false)
   })
 
   it('flac lossless: usa codec flac e nao inclui bitrate', () => {
