@@ -74,7 +74,7 @@ export function PlaylistsView() {
     setMsg(null)
     try {
       const r = await api.syncPlaylist(sub.url)
-      setMsg(`"${sub.name}": ${r.added} nova(s) enfileirada(s) de ${r.total}.`)
+      setMsg(`"${sub.name}": ${r.added} nova(s) baixando de ${r.total}.`)
       reload()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -89,7 +89,7 @@ export function PlaylistsView() {
     setMsg(null)
     try {
       const r = await api.syncAllPlaylists()
-      setMsg(`${r.added} nova(s) enfileirada(s) no total.`)
+      setMsg(`${r.added} nova(s) baixando no total.`)
       reload()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))

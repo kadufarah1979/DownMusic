@@ -157,7 +157,7 @@ export function App() {
             {resolved.length > 0 && (
               <div className="flex min-h-0 flex-1 flex-col border-b border-neutral-800">
                 <p className="px-4 pb-2 pt-4 text-xs text-neutral-400">
-                  {resolved.length} faixa(s) carregada(s) — desmarque o que não quer e enfileire:
+                  {resolved.length} faixa(s) carregada(s) — desmarque o que não quer e baixe:
                 </p>
                 <div className="flex items-center gap-2 px-4 pb-2 text-xs text-neutral-400">
                   <span className="shrink-0">Baixar em:</span>

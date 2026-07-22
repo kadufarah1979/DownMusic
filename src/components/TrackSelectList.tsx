@@ -21,8 +21,8 @@ function fmtDur(sec?: number): string {
 /**
  * Lista de faixas com checkbox por item (todas marcadas por padrao),
  * filtro de texto (por titulo/artista), "marcar/desmarcar todas" e
- * "Enfileirar selecionados (N)". Filtro e uma lente: as acoes (marcar todas,
- * enfileirar, contador) operam sobre as faixas VISIVEIS (filtradas).
+ * "Baixar selecionados (N)". Filtro e uma lente: as acoes (marcar todas,
+ * baixar, contador) operam sobre as faixas VISIVEIS (filtradas).
  * Reutilizado nos grupos da Busca e nas faixas resolvidas da aba Download.
  */
 export function TrackSelectList({
@@ -155,7 +155,7 @@ export function TrackSelectList({
           disabled={visibleSelected.length === 0}
           className="whitespace-nowrap rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium disabled:opacity-40"
         >
-          Enfileirar selecionados ({visibleSelected.length})
+          Baixar selecionados ({visibleSelected.length})
         </button>
       </div>
 
