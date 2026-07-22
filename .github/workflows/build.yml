@@ -61,7 +61,7 @@ jobs:
           Expand-Archive -Path $env:TEMP/ffmpeg.zip -DestinationPath $env:TEMP/ffmpeg -Force
           $ff = Get-ChildItem -Path $env:TEMP/ffmpeg -Recurse -Filter ffmpeg.exe | Select-Object -First 1
           Copy-Item $ff.FullName resources/bin/ffmpeg.exe
-      - run: npm test
+      # testes unitarios rodam so no job Linux (varios assumem caminhos POSIX)
       - run: npm run dist:win
       - uses: actions/upload-artifact@v4
         with:
@@ -93,7 +93,7 @@ jobs:
           unzip -o /tmp/ffmpeg.zip -d /tmp/ffmpeg
           cp /tmp/ffmpeg/ffmpeg resources/bin/ffmpeg
           chmod +x resources/bin/yt-dlp resources/bin/ffmpeg
-      - run: npm test
+      # testes unitarios rodam so no job Linux (varios assumem caminhos POSIX)
       - run: npm run dist:mac
       - uses: actions/upload-artifact@v4
         with:
