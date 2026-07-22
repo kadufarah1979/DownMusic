@@ -11,4 +11,10 @@ describe('binPath', () => {
     expect(binPath('yt-dlp', { isPackaged: false, resourcesPath: '' })).toBe('yt-dlp')
     expect(binPath('ffmpeg', { isPackaged: false, resourcesPath: '' })).toBe('ffmpeg')
   })
+
+  it('Windows: acrescenta .exe ao nome do binario', () => {
+    expect(binPath('yt-dlp', { isPackaged: true, resourcesPath: 'C:\\app\\resources', platform: 'win32' }))
+      .toContain('yt-dlp.exe')
+    expect(binPath('ffmpeg', { isPackaged: false, resourcesPath: '', platform: 'win32' })).toBe('ffmpeg.exe')
+  })
 })

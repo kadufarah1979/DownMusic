@@ -4,6 +4,15 @@ import type { YtDlpEngine } from '../engines/ytdlp'
 import { ytdlpInfoToTrack } from './ytdlpMap'
 import { join } from 'node:path'
 
+/** True se a URL aponta para um container (playlist, canal, /videos, /streams...). */
+export function isYouTubeContainer(url: string): boolean {
+  return (
+    /[?&]list=/i.test(url) ||
+    /youtube\.com\/(channel\/|@|c\/|user\/)/i.test(url) ||
+    /youtube\.com\/[^/]+\/(videos|streams|shorts|playlists)/i.test(url)
+  )
+}
+
 /** Fonte YouTube / YouTube Music: resolve e baixa direto via yt-dlp. */
 export class YouTubeSource implements Source {
   readonly id = 'youtube' as const
@@ -24,6 +33,15 @@ export class YouTubeSource implements Source {
   }
 
   async resolve(url: string): Promise<TrackMeta[]> {
+    // canais/playlists: listagem rapida (flat) e monta a watch URL de cada video,
+    // pois entradas flat nao trazem webpage_url. Videos avulsos: resolve completo.
+    if (isYouTubeContainer(url)) {
+      const infos = await this.ytdlp.dumpFlat(url)
+      return infos.map((info) => {
+        const t = ytdlpInfoToTrack(info, this.id)
+        return { ...t, sourceUrl: `https://www.youtube.com/watch?v=${t.id}` }
+      })
+    }
     const infos = await this.ytdlp.dumpJson(url)
     return infos.map((info) => ytdlpInfoToTrack(info, this.id))
   }

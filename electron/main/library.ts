@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import PQueue from 'p-queue'
 import { REKORDBOX_FIELDS, type ScannedTrack, type PlannedInput, type AnalysisReport, type OrganizationPlan } from '../../shared/library'
 import { analyzeLibrary } from '../../shared/libraryAnalysis'
@@ -32,13 +33,15 @@ function hasGaps(t: ScannedTrack): boolean {
 }
 
 /** Orquestra scan → analyze → enrich → plan → apply. */
-export class LibraryService {
+export class LibraryService extends EventEmitter {
   constructor(
     private readonly scanner: LibraryScanner,
     private readonly _executor: OrganizationExecutor,
     private readonly enricher: MetadataEnricher,
     private readonly deps: { home: string }
-  ) {}
+  ) {
+    super()
+  }
 
   /** Exposto para o IPC encaminhar os eventos de progresso ao renderer. */
   get executor(): OrganizationExecutor {
@@ -53,26 +56,33 @@ export class LibraryService {
     return { report: analyzeLibrary(tracks), unreadable }
   }
 
-  /** Enriquece (Deezer) as faixas com buracos, com concorrência limitada. */
+  /** Enriquece (Deezer) as faixas com buracos, com concorrência limitada.
+   *  Emite eventos 'progress' (fase 'enrich') a cada faixa concluída. */
   async enrichInputs(tracks: ScannedTrack[]): Promise<PlannedInput[]> {
     const q = new PQueue({ concurrency: 4 })
     const inputs: PlannedInput[] = tracks.map((track) => ({ track, filled: {} }))
+    const toEnrich = inputs.filter((i) => hasGaps(i.track))
+    const total = toEnrich.length
+    let done = 0
+    this.emit('progress', { done, total, current: '', phase: 'enrich' })
     await Promise.all(
-      inputs.map((input) =>
-        hasGaps(input.track)
-          ? q.add(async () => {
-              const meta = {
-                id: input.track.path,
-                title: input.track.title ?? '',
-                artists: input.track.artists,
-                isrc: input.track.isrc,
-                sourceId: 'youtube',
-                sourceUrl: ''
-              } as TrackMeta
-              const tags = await this.enricher.enrich(meta)
-              input.filled = mergeMissing(input.track, tags)
-            })
-          : Promise.resolve()
+      toEnrich.map((input) =>
+        q.add(async () => {
+          const meta = {
+            id: input.track.path,
+            title: input.track.title ?? '',
+            artists: input.track.artists,
+            isrc: input.track.isrc,
+            sourceId: 'youtube',
+            sourceUrl: ''
+          } as TrackMeta
+          try {
+            const tags = await this.enricher.enrich(meta)
+            input.filled = mergeMissing(input.track, tags)
+          } finally {
+            this.emit('progress', { done: ++done, total, current: input.track.path, phase: 'enrich' })
+          }
+        })
       )
     )
     return inputs

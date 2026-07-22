@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { YtDlpEngine, type ProcRunner } from '../engines/ytdlp'
-import { YouTubeSource } from './youtube'
+import { YouTubeSource, isYouTubeContainer } from './youtube'
 import { BandcampSource } from './bandcamp'
 import { SoundCloudSource } from './soundcloud'
 
@@ -36,6 +36,33 @@ describe('YouTubeSource.resolve', () => {
     )
     const tracks = await new YouTubeSource(engine).resolve('https://youtube.com/playlist?list=x')
     expect(tracks.map((t) => t.id)).toEqual(['a', 'b'])
+  })
+})
+
+describe('isYouTubeContainer', () => {
+  it('reconhece canais, playlists e abas de listagem', () => {
+    expect(isYouTubeContainer('https://www.youtube.com/@canal')).toBe(true)
+    expect(isYouTubeContainer('https://www.youtube.com/channel/UC123')).toBe(true)
+    expect(isYouTubeContainer('https://www.youtube.com/playlist?list=PL1')).toBe(true)
+    expect(isYouTubeContainer('https://www.youtube.com/@canal/videos')).toBe(true)
+    expect(isYouTubeContainer('https://youtu.be/v1')).toBe(false)
+  })
+})
+
+describe('YouTubeSource.resolve (canal/flat)', () => {
+  it('lista entradas do canal e monta a watch URL de cada video', async () => {
+    const engine = engineReturning(
+      [
+        JSON.stringify({ id: 'aaa', title: 'Video 1', playlist: 'Meu Canal' }),
+        JSON.stringify({ id: 'bbb', title: 'Video 2', playlist: 'Meu Canal' })
+      ].join('\n')
+    )
+    const tracks = await new YouTubeSource(engine).resolve('https://www.youtube.com/@canal')
+    expect(tracks.map((t) => t.sourceUrl)).toEqual([
+      'https://www.youtube.com/watch?v=aaa',
+      'https://www.youtube.com/watch?v=bbb'
+    ])
+    expect(tracks[0].playlist).toBe('Meu Canal')
   })
 })
 

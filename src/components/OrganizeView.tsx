@@ -11,7 +11,7 @@ export function OrganizeView() {
   const [template, setTemplate] = useState(DEFAULT_TPL)
   const [plan, setPlan] = useState<OrganizationPlan | null>(null)
   const [busy, setBusy] = useState('')
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
+  const [progress, setProgress] = useState<{ done: number; total: number; phase?: 'enrich' | 'apply' } | null>(null)
   const [result, setResult] = useState('')
 
   useEffect(() => api.onLibraryProgress((p) => setProgress(p)), [])
@@ -23,12 +23,14 @@ export function OrganizeView() {
       setReport(null)
       setPlan(null)
       setResult('')
+      setProgress(null)
     }
   }
   async function analyze() {
     setBusy('Analisando...')
     setPlan(null)
     setResult('')
+    setProgress(null)
     const { report, unreadable } = await api.libraryScanAnalyze(dir)
     setReport(report)
     setUnreadable(unreadable)
@@ -36,14 +38,17 @@ export function OrganizeView() {
   }
   async function makePlan() {
     setBusy('Enriquecendo e planejando...')
+    setResult('')
+    setProgress({ done: 0, total: 0, phase: 'enrich' })
     setPlan(await api.libraryPlan(dir, template))
     setBusy('')
+    setProgress(null)
   }
   async function apply() {
     if (!plan) return
     if (!confirm(`Aplicar reorganização em ${plan.entries.length} arquivo(s)? Duplicados vão para _Duplicados/.`)) return
     setBusy('Aplicando...')
-    setProgress({ done: 0, total: plan.entries.length })
+    setProgress({ done: 0, total: plan.entries.length, phase: 'apply' })
     const r = await api.libraryApply(plan)
     setResult(`Movidos: ${r.moved} · Retagueados: ${r.retagged} · Duplicados: ${r.quarantined} · Falhas: ${r.failed.length}`)
     setBusy('')
@@ -61,7 +66,21 @@ export function OrganizeView() {
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
-        {busy && <p className="text-sm text-emerald-400">{busy}</p>}
+        {busy && (
+          <div>
+            <p className="mb-2 text-sm text-emerald-400">{busy}</p>
+            {progress?.phase === 'enrich' && (
+              <>
+                <ProgressBar done={progress.done} total={progress.total} />
+                <p className="mt-1 text-xs text-neutral-400">
+                  {progress.total > 0
+                    ? `Enriquecendo tags via Deezer — ${progress.done}/${progress.total} faixa(s) com lacunas`
+                    : 'Preparando enriquecimento…'}
+                </p>
+              </>
+            )}
+          </div>
+        )}
 
         {report && (
           <div className="grid grid-cols-3 gap-2 text-xs">
@@ -106,9 +125,24 @@ export function OrganizeView() {
           </div>
         )}
 
-        {progress && <p className="text-sm text-emerald-400">Aplicando {progress.done}/{progress.total}…</p>}
+        {progress?.phase === 'apply' && (
+          <div>
+            <p className="mb-2 text-sm text-emerald-400">Aplicando {progress.done}/{progress.total}…</p>
+            <ProgressBar done={progress.done} total={progress.total} />
+          </div>
+        )}
         {result && <p className="text-sm text-emerald-300">{result}</p>}
       </div>
+    </div>
+  )
+}
+
+/** Barra de progresso geral (mesmo padrão da aba Download). */
+function ProgressBar({ done, total }: { done: number; total: number }) {
+  const pct = total ? Math.round((done / total) * 100) : 0
+  return (
+    <div className="h-1.5 w-full rounded bg-neutral-700">
+      <div className="h-1.5 rounded bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
     </div>
   )
 }

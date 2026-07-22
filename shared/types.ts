@@ -1,6 +1,6 @@
 // Modelos compartilhados entre main, preload e renderer.
 
-export type SourceId = 'spotify' | 'youtube' | 'bandcamp' | 'soundcloud' | 'deezer'
+export type SourceId = 'spotify' | 'youtube' | 'bandcamp' | 'soundcloud' | 'deezer' | 'generic'
 
 export type AudioFormat = 'mp3' | 'flac' | 'm4a' | 'opus' | 'best'
 export type AudioQuality = '128' | '192' | '256' | '320' | 'lossless' | 'best'
@@ -80,6 +80,8 @@ export interface AppConfig {
   maxRetries: number
   /** Sincronizar as playlists cadastradas automaticamente ao abrir o app. */
   syncOnStartup: boolean
+  /** Vigiar a area de transferencia e sugerir resolver links copiados. */
+  watchClipboard: boolean
   spotify: {
     clientId?: string
     clientSecret?: string
@@ -94,5 +96,6 @@ export const DEFAULT_CONFIG: AppConfig = {
   concurrency: 3,
   maxRetries: 2,
   syncOnStartup: false,
+  watchClipboard: true,
   spotify: {}
 }

@@ -13,6 +13,11 @@ export class Resolver {
     return this.sources.find((s) => s.matches(url))
   }
 
+  /** True se alguma fonte reconhece a URL (usado pelo monitor de clipboard). */
+  supports(url: string): boolean {
+    return this.sourceFor(url) !== undefined
+  }
+
   /** URL -> 1..N faixas (playlist/album expandem). */
   async resolve(url: string): Promise<TrackMeta[]> {
     const source = this.sourceFor(url)

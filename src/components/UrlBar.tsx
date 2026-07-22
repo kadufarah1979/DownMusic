@@ -30,7 +30,7 @@ export function UrlBar({ onResolved }: { onResolved: (tracks: TrackMeta[]) => vo
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
-          placeholder="Cole um link (Spotify, Deezer, YouTube, Bandcamp, SoundCloud)"
+          placeholder="Cole um link ou canal (YouTube, Spotify, Deezer, SoundCloud, TikTok, Vimeo, Dailymotion...)"
           className="flex-1 rounded bg-neutral-800 px-3 py-2 text-sm outline-none placeholder:text-neutral-500"
         />
         <button
@@ -42,6 +42,9 @@ export function UrlBar({ onResolved }: { onResolved: (tracks: TrackMeta[]) => vo
         </button>
       </div>
       {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+      <p className="mt-2 text-xs text-neutral-500">
+        💡 Arraste o link para iniciar o download da sua música, playlist, canal…
+      </p>
     </div>
   )
 }

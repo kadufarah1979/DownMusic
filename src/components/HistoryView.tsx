@@ -9,7 +9,8 @@ const LABEL: Record<SourceId, string> = {
   deezer: 'Deezer',
   youtube: 'YouTube',
   soundcloud: 'SoundCloud',
-  bandcamp: 'Bandcamp'
+  bandcamp: 'Bandcamp',
+  generic: 'Outros'
 }
 
 /** Aba Historico: lista tudo que ja foi baixado (independe do arquivo existir). */

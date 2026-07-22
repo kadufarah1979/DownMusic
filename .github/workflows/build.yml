@@ -1,0 +1,110 @@
+name: build
+
+# Gera instaladores para Linux (AppImage), Windows (NSIS) e macOS (dmg/zip).
+# - Em push/PR: builda e sobe os artefatos (download na aba Actions).
+# - Em tag v*: anexa os instaladores a um GitHub Release.
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Baixar yt-dlp e ffmpeg (Linux)
+        run: |
+          mkdir -p resources/bin
+          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o resources/bin/yt-dlp
+          curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o /tmp/ffmpeg.tar.xz
+          tar -xf /tmp/ffmpeg.tar.xz -C /tmp
+          cp /tmp/ffmpeg-*-amd64-static/ffmpeg resources/bin/ffmpeg
+          chmod +x resources/bin/yt-dlp resources/bin/ffmpeg
+      - run: npm test
+      - run: npm run dist:linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: downmusic-linux
+          path: dist/*.AppImage
+      - name: Release (tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.AppImage
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Baixar yt-dlp e ffmpeg (Windows)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path resources/bin | Out-Null
+          Invoke-WebRequest https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -OutFile resources/bin/yt-dlp.exe
+          Invoke-WebRequest https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip -OutFile $env:TEMP/ffmpeg.zip
+          Expand-Archive -Path $env:TEMP/ffmpeg.zip -DestinationPath $env:TEMP/ffmpeg -Force
+          $ff = Get-ChildItem -Path $env:TEMP/ffmpeg -Recurse -Filter ffmpeg.exe | Select-Object -First 1
+          Copy-Item $ff.FullName resources/bin/ffmpeg.exe
+      - run: npm test
+      - run: npm run dist:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: downmusic-windows
+          path: dist/*.exe
+      - name: Release (tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+
+  macos:
+    runs-on: macos-latest
+    env:
+      # sem certificado de assinatura no CI: evita a tentativa de codesign/notarize
+      CSC_IDENTITY_AUTO_DISCOVERY: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Baixar yt-dlp e ffmpeg (macOS)
+        run: |
+          mkdir -p resources/bin
+          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o resources/bin/yt-dlp
+          curl -L https://evermeet.cx/ffmpeg/getrelease/zip -o /tmp/ffmpeg.zip
+          unzip -o /tmp/ffmpeg.zip -d /tmp/ffmpeg
+          cp /tmp/ffmpeg/ffmpeg resources/bin/ffmpeg
+          chmod +x resources/bin/yt-dlp resources/bin/ffmpeg
+      - run: npm test
+      - run: npm run dist:mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: downmusic-macos
+          path: |
+            dist/*.dmg
+            dist/*.zip
+      - name: Release (tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.dmg
+            dist/*.zip

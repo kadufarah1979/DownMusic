@@ -67,6 +67,15 @@ export function buildInfoArgs(url: string): string[] {
 }
 
 /**
+ * Monta os argumentos para LISTAR itens de um container (playlist/canal) de forma
+ * leve: --flat-playlist nao resolve cada video, so lista as entradas (id/title/url).
+ * Essencial para canais inteiros, onde resolver cada video seria lentissimo.
+ */
+export function buildFlatListArgs(url: string): string[] {
+  return ['--flat-playlist', '--dump-json', '--no-warnings', url]
+}
+
+/**
  * Monta os argumentos de busca (ytsearch/scsearch) em modo leve (--flat-playlist),
  * retornando ate `n` resultados como JSON, sem resolver cada video.
  */
@@ -133,6 +142,15 @@ export class YtDlpEngine {
    */
   async dumpJson(url: string): Promise<Record<string, unknown>[]> {
     const { stdout } = await this.runner.run(this.bin, buildInfoArgs(url), () => {})
+    return parseJsonLines(stdout)
+  }
+
+  /**
+   * Lista as entradas de um container (playlist/canal) sem resolver cada video.
+   * Retorna um objeto por entrada (id, title, url...), rapido mesmo em canais grandes.
+   */
+  async dumpFlat(url: string): Promise<Record<string, unknown>[]> {
+    const { stdout } = await this.runner.run(this.bin, buildFlatListArgs(url), () => {})
     return parseJsonLines(stdout)
   }
 

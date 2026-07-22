@@ -54,7 +54,7 @@ export class OrganizationExecutor extends EventEmitter {
       } catch (err) {
         failed.push({ path: e.from, error: err instanceof Error ? err.message : String(err) })
       }
-      this.emit('progress', { done: ++done, total: plan.entries.length, current: e.from })
+      this.emit('progress', { done: ++done, total: plan.entries.length, current: e.from, phase: 'apply' })
     }
     return { moved, retagged, quarantined, failed }
   }

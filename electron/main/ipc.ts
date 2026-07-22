@@ -37,7 +37,8 @@ export const CH = {
   libraryScanAnalyze: 'library:scanAnalyze',
   libraryPlan: 'library:plan',
   libraryApply: 'library:apply',
-  libraryProgress: 'library:progress'
+  libraryProgress: 'library:progress',
+  clipboardLink: 'clipboard:link'
 } as const
 
 export function registerIpc(
@@ -57,6 +58,10 @@ export function registerIpc(
   ipcMain.handle(CH.libraryPlan, (_e, dir: string, template: string) => library.plan(dir, template))
   ipcMain.handle(CH.libraryApply, (_e, plan: OrganizationPlan) => library.apply(plan))
   library.executor.on('progress', (p: unknown) => {
+    if (!win.isDestroyed()) win.webContents.send(CH.libraryProgress, p)
+  })
+  // progresso do enriquecimento (fase 'enrich') vem do próprio LibraryService
+  library.on('progress', (p: unknown) => {
     if (!win.isDestroyed()) win.webContents.send(CH.libraryProgress, p)
   })
 

@@ -10,7 +10,8 @@ const LABEL: Record<SourceId, string> = {
   deezer: 'Deezer',
   youtube: 'YouTube',
   soundcloud: 'SoundCloud',
-  bandcamp: 'Bandcamp'
+  bandcamp: 'Bandcamp',
+  generic: 'Outros'
 }
 
 type TracksState = 'loading' | TrackMeta[] | { error: string }

@@ -4,7 +4,7 @@ import type { HistoryEntry } from '../../shared/history'
 import type { AnalysisReport, OrganizationPlan } from '../../shared/library'
 
 type ApplyResult = { moved: number; retagged: number; quarantined: number; failed: { path: string; error: string }[] }
-type LibraryProgress = { done: number; total: number; current: string }
+type LibraryProgress = { done: number; total: number; current: string; phase?: 'enrich' | 'apply' }
 
 /** Nomes de canais espelhados de main/ipc.ts. */
 const CH = {
@@ -32,7 +32,8 @@ const CH = {
   libraryScanAnalyze: 'library:scanAnalyze',
   libraryPlan: 'library:plan',
   libraryApply: 'library:apply',
-  libraryProgress: 'library:progress'
+  libraryProgress: 'library:progress',
+  clipboardLink: 'clipboard:link'
 } as const
 
 /** API tipada exposta ao renderer via contextBridge. */
@@ -76,6 +77,11 @@ const api = {
     const listener = (_e: unknown, p: LibraryProgress) => cb(p)
     ipcRenderer.on(CH.libraryProgress, listener)
     return () => ipcRenderer.removeListener(CH.libraryProgress, listener)
+  },
+  onClipboardLink: (cb: (url: string) => void): (() => void) => {
+    const listener = (_e: unknown, url: string) => cb(url)
+    ipcRenderer.on(CH.clipboardLink, listener)
+    return () => ipcRenderer.removeListener(CH.clipboardLink, listener)
   }
 }
 

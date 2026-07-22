@@ -17,6 +17,9 @@ import { BandcampSource } from '../sources/bandcamp'
 import { SoundCloudSource } from '../sources/soundcloud'
 import { DeezerSource } from '../sources/deezer'
 import { DeezerClient } from '../sources/deezerClient'
+import { GenericYtDlpSource } from '../sources/generic'
+import { ClipboardWatcher } from './clipboardWatcher'
+import { CH } from './ipc'
 import { MetadataEnricher } from './metadataEnricher'
 import { LibraryScanner, MusicMetadataReader } from './libraryScanner'
 import { OrganizationExecutor } from './organizationExecutor'
@@ -40,7 +43,10 @@ function buildCore() {
     new YouTubeSource(ytdlp),
     new BandcampSource(ytdlp),
     new SoundCloudSource(ytdlp),
-    new DeezerSource(ytdlp, new DeezerClient())
+    new DeezerSource(ytdlp, new DeezerClient()),
+    // fonte generica por ULTIMO: captura qualquer URL nao reconhecida acima
+    // (TikTok, Vimeo, Dailymotion, Facebook, Twitch... via yt-dlp).
+    new GenericYtDlpSource(ytdlp)
   ]
 
   const resolver = new Resolver(sources)
@@ -80,6 +86,17 @@ function createWindow(core: ReturnType<typeof buildCore>): void {
   })
 
   registerIpc(win, core)
+
+  // monitor de clipboard: sugere resolver links copiados de fontes suportadas
+  const clipboard = new ClipboardWatcher(
+    () => core.config.get().watchClipboard ?? true,
+    (url) => core.resolver.supports(url),
+    (url) => {
+      if (!win.isDestroyed()) win.webContents.send(CH.clipboardLink, url)
+    }
+  )
+  clipboard.start()
+  win.on('closed', () => clipboard.stop())
 
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])

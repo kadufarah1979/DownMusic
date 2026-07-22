@@ -17,6 +17,10 @@ export function App() {
   const [tab, setTab] = useState<Tab>('download')
   const [resolved, setResolved] = useState<TrackMeta[]>([])
   const [downloadDir, setDownloadDir] = useState('')
+  const [clipUrl, setClipUrl] = useState<string | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const [extBusy, setExtBusy] = useState(false)
+  const [extError, setExtError] = useState<string | null>(null)
   const isDownloaded = useDownloadedChecker()
 
   // pasta padrao (Configuracoes) — usada como ponto de partida de cada lista
@@ -24,10 +28,54 @@ export function App() {
     api.getConfig().then((c) => setDownloadDir(c.outputDir))
   }, [])
 
+  // monitor de clipboard: sugestao discreta quando um link suportado e copiado
+  useEffect(() => api.onClipboardLink((url) => setClipUrl(url)), [])
+
+  // drag & drop de link em qualquer lugar da janela
+  useEffect(() => {
+    const over = (e: DragEvent) => {
+      e.preventDefault()
+      setDragging(true)
+    }
+    const leave = (e: DragEvent) => {
+      if (e.relatedTarget === null) setDragging(false)
+    }
+    const drop = (e: DragEvent) => {
+      e.preventDefault()
+      setDragging(false)
+      const text = (e.dataTransfer?.getData('text/uri-list') || e.dataTransfer?.getData('text') || '').trim()
+      const url = text.split(/\s+/)[0]
+      if (/^https?:\/\//i.test(url)) resolveExternal(url)
+    }
+    window.addEventListener('dragover', over)
+    window.addEventListener('dragleave', leave)
+    window.addEventListener('drop', drop)
+    return () => {
+      window.removeEventListener('dragover', over)
+      window.removeEventListener('dragleave', leave)
+      window.removeEventListener('drop', drop)
+    }
+  }, [])
+
   // ao resolver uma nova lista, recomeca na pasta padrao atual
   function onResolved(tracks: TrackMeta[]) {
     setResolved(tracks)
     api.getConfig().then((c) => setDownloadDir(c.outputDir))
+  }
+
+  // resolve uma URL vinda do clipboard ou de drag & drop e leva para a aba Download
+  async function resolveExternal(url: string) {
+    setTab('download')
+    setClipUrl(null)
+    setExtError(null)
+    setExtBusy(true)
+    try {
+      onResolved(await api.resolve(url))
+    } catch (e) {
+      setExtError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setExtBusy(false)
+    }
   }
 
   async function chooseDownloadDir() {
@@ -56,7 +104,44 @@ export function App() {
         </button>
       </header>
 
-      <main className="flex flex-1 flex-col overflow-hidden">
+      {clipUrl && (
+        <div className="flex items-center gap-3 border-b border-emerald-800/60 bg-emerald-950/40 px-4 py-2 text-xs">
+          <span className="text-emerald-300">🔗 Link copiado detectado:</span>
+          <span className="min-w-0 flex-1 truncate text-neutral-300">{clipUrl}</span>
+          <button
+            onClick={() => resolveExternal(clipUrl)}
+            className="shrink-0 rounded bg-emerald-600 px-3 py-1 hover:bg-emerald-500"
+          >
+            Resolver
+          </button>
+          <button
+            onClick={() => setClipUrl(null)}
+            className="shrink-0 rounded bg-neutral-700 px-3 py-1 hover:bg-neutral-600"
+          >
+            Ignorar
+          </button>
+        </div>
+      )}
+      {extBusy && (
+        <div className="border-b border-neutral-800 bg-neutral-800/50 px-4 py-2 text-xs text-emerald-400">
+          Resolvendo link…
+        </div>
+      )}
+      {extError && (
+        <div className="flex items-center gap-3 border-b border-red-900/60 bg-red-950/30 px-4 py-2 text-xs text-red-300">
+          <span className="min-w-0 flex-1 truncate">{extError}</span>
+          <button onClick={() => setExtError(null)} className="shrink-0 rounded bg-neutral-700 px-2 py-0.5 hover:bg-neutral-600">
+            Fechar
+          </button>
+        </div>
+      )}
+
+      <main className="relative flex flex-1 flex-col overflow-hidden">
+        {dragging && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center border-2 border-dashed border-emerald-500 bg-neutral-900/80">
+            <p className="text-lg font-medium text-emerald-300">Solte o link para resolver</p>
+          </div>
+        )}
         {tab === 'download' && (
           <div className="flex flex-1 flex-col overflow-hidden">
             <UrlBar onResolved={onResolved} />
