@@ -64,6 +64,11 @@ export function App() {
     api.getConfig().then((c) => setDownloadDir(c.outputDir))
   }
 
+  // troca uma faixa da lista resolvida pela versão extended escolhida
+  function replaceResolved(original: TrackMeta, replacement: TrackMeta) {
+    setResolved((prev) => prev.map((t) => (t === original ? replacement : t)))
+  }
+
   // resolve uma URL vinda do clipboard ou de drag & drop e leva para a aba Download
   async function resolveExternal(url: string) {
     setTab('download')
@@ -170,6 +175,7 @@ export function App() {
                     onEnqueued={() => setResolved([])}
                     isDownloaded={isDownloaded}
                     outputDir={downloadDir || undefined}
+                    onReplace={replaceResolved}
                   />
                 </div>
               </div>

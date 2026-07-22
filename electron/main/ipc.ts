@@ -2,6 +2,8 @@ import { ipcMain, dialog, shell, app, BrowserWindow } from 'electron'
 import { mkdir } from 'node:fs/promises'
 import { isSafeToClear, clearDir } from './reset'
 import { checkForUpdate } from './updater'
+import { findExtended } from './extendedFinder'
+import type { TrackMeta } from '../../shared/types'
 import type { Resolver } from './resolver'
 import type { QueueManager } from './queue'
 import type { ConfigStore } from './config'
@@ -41,7 +43,8 @@ export const CH = {
   libraryProgress: 'library:progress',
   clipboardLink: 'clipboard:link',
   appVersion: 'app:getVersion',
-  appCheckUpdate: 'app:checkUpdate'
+  appCheckUpdate: 'app:checkUpdate',
+  searchFindExtended: 'search:findExtended'
 } as const
 
 export function registerIpc(
@@ -62,6 +65,7 @@ export function registerIpc(
   ipcMain.handle(CH.libraryApply, (_e, plan: OrganizationPlan) => library.apply(plan))
   ipcMain.handle(CH.appVersion, () => app.getVersion())
   ipcMain.handle(CH.appCheckUpdate, () => checkForUpdate(app.getVersion()))
+  ipcMain.handle(CH.searchFindExtended, (_e, track: TrackMeta) => findExtended(resolver, track))
   library.executor.on('progress', (p: unknown) => {
     if (!win.isDestroyed()) win.webContents.send(CH.libraryProgress, p)
   })

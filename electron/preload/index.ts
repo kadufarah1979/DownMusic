@@ -36,7 +36,8 @@ const CH = {
   libraryProgress: 'library:progress',
   clipboardLink: 'clipboard:link',
   appVersion: 'app:getVersion',
-  appCheckUpdate: 'app:checkUpdate'
+  appCheckUpdate: 'app:checkUpdate',
+  searchFindExtended: 'search:findExtended'
 } as const
 
 /** API tipada exposta ao renderer via contextBridge. */
@@ -87,7 +88,9 @@ const api = {
     return () => ipcRenderer.removeListener(CH.clipboardLink, listener)
   },
   getVersion: (): Promise<string> => ipcRenderer.invoke(CH.appVersion),
-  checkUpdate: (): Promise<UpdateInfo> => ipcRenderer.invoke(CH.appCheckUpdate)
+  checkUpdate: (): Promise<UpdateInfo> => ipcRenderer.invoke(CH.appCheckUpdate),
+  findExtended: (track: TrackMeta): Promise<Partial<Record<SourceId, TrackMeta>>> =>
+    ipcRenderer.invoke(CH.searchFindExtended, track)
 }
 
 contextBridge.exposeInMainWorld('downmusic', api)

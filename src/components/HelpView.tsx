@@ -82,7 +82,7 @@ export function HelpView({ onGoToSettings }: { onGoToSettings: () => void }) {
         {/* Como usar */}
         <Section title="Como usar">
           <ul className="space-y-2 text-sm text-neutral-300">
-            <li><strong className="text-neutral-100">Download:</strong> cole um link ou <em>canal</em> (YouTube, Spotify, SoundCloud, TikTok, Vimeo…) — ou arraste o link para a janela —, revise as faixas e enfileire.</li>
+            <li><strong className="text-neutral-100">Download:</strong> cole um link ou <em>canal</em> (YouTube, Spotify, SoundCloud, TikTok, Vimeo…) — ou arraste o link para a janela —, revise as faixas e enfileire. Use <strong>“Buscar versões extended”</strong> para procurar Extended/Club Mix de cada faixa nos motores configurados e trocar a que preferir.</li>
             <li><strong className="text-neutral-100">Busca:</strong> pesquise por texto em várias fontes ao mesmo tempo.</li>
             <li><strong className="text-neutral-100">Playlists:</strong> cadastre uma playlist ou canal para sincronizar e baixar automaticamente os itens novos.</li>
             <li><strong className="text-neutral-100">Organizar:</strong> analise uma pasta, enriqueça as tags (Deezer) e aplique a reorganização por gênero (estilo Rekordbox).</li>
