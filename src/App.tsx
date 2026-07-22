@@ -92,9 +92,9 @@ export function App() {
           <TabButton active={tab === 'download'} onClick={() => setTab('download')}>Download</TabButton>
           <TabButton active={tab === 'search'} onClick={() => setTab('search')}>Busca</TabButton>
           <TabButton active={tab === 'playlists'} onClick={() => setTab('playlists')}>Playlists</TabButton>
-          <TabButton active={tab === 'history'} onClick={() => setTab('history')}>Historico</TabButton>
+          <TabButton active={tab === 'history'} onClick={() => setTab('history')}>Histórico</TabButton>
           <TabButton active={tab === 'organize'} onClick={() => setTab('organize')}>Organizar</TabButton>
-          <TabButton active={tab === 'settings'} onClick={() => setTab('settings')}>Configuracoes</TabButton>
+          <TabButton active={tab === 'settings'} onClick={() => setTab('settings')}>Configurações</TabButton>
           <TabButton active={tab === 'help'} onClick={() => setTab('help')}>Ajuda</TabButton>
         </nav>
         <button
@@ -150,12 +150,12 @@ export function App() {
             {resolved.length > 0 && (
               <div className="flex min-h-0 flex-1 flex-col border-b border-neutral-800">
                 <p className="px-4 pb-2 pt-4 text-xs text-neutral-400">
-                  {resolved.length} faixa(s) resolvida(s) — desmarque o que nao quer e enfileire:
+                  {resolved.length} faixa(s) resolvida(s) — desmarque o que não quer e enfileire:
                 </p>
                 <div className="flex items-center gap-2 px-4 pb-2 text-xs text-neutral-400">
                   <span className="shrink-0">Baixar em:</span>
                   <span className="min-w-0 flex-1 truncate rounded bg-neutral-800 px-2 py-1 text-neutral-200">
-                    {downloadDir || '(pasta padrao)'}
+                    {downloadDir || '(pasta padrão)'}
                   </span>
                   <button
                     onClick={chooseDownloadDir}

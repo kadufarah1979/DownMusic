@@ -7,7 +7,7 @@ const BADGE: Record<TrackStatus, { label: string; cls: string }> = {
   running: { label: 'baixando', cls: 'bg-blue-900/60 text-blue-300' },
   queued: { label: 'na fila', cls: 'bg-neutral-700 text-neutral-300' },
   downloaded: { label: '✓ baixado', cls: 'bg-emerald-900/60 text-emerald-300' },
-  new: { label: 'nao baixado', cls: 'bg-neutral-700 text-neutral-400' }
+  new: { label: 'não baixado', cls: 'bg-neutral-700 text-neutral-400' }
 }
 
 const ACTION: Partial<Record<TrackStatus, string>> = {

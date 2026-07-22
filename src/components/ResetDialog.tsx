@@ -19,7 +19,7 @@ export function ResetDialog({ onClose }: { onClose: () => void }) {
   async function run() {
     if (!anySelected || busy) return
     // confirmacao nativa extra para o caso destrutivo (apagar arquivos)
-    if (downloads && !window.confirm(`Apagar TODOS os arquivos em "${dir}"?\n\nIsto NAO pode ser desfeito.`)) return
+    if (downloads && !window.confirm(`Apagar TODOS os arquivos em "${dir}"?\n\nIsto NÃO pode ser desfeito.`)) return
 
     setBusy(true)
     setMsg(null)
@@ -27,7 +27,7 @@ export function ResetDialog({ onClose }: { onClose: () => void }) {
     try {
       if (history) {
         await api.clearHistory()
-        done.push('historico')
+        done.push('histórico')
       }
       if (playlists) {
         await api.clearPlaylists()
@@ -59,8 +59,8 @@ export function ResetDialog({ onClose }: { onClose: () => void }) {
           <label className="flex cursor-pointer items-start gap-2">
             <input type="checkbox" className="mt-0.5" checked={history} onChange={(e) => setHistory(e.target.checked)} />
             <span className="text-sm">
-              Historico de downloads
-              <span className="block text-xs text-neutral-500">apaga as entradas do historico (nao mexe em arquivos)</span>
+              Histórico de downloads
+              <span className="block text-xs text-neutral-500">apaga as entradas do histórico (não mexe em arquivos)</span>
             </span>
           </label>
 
@@ -77,7 +77,7 @@ export function ResetDialog({ onClose }: { onClose: () => void }) {
             <span className="text-sm text-red-300">
               ⚠ Arquivos baixados
               <span className="block text-xs text-red-400/80">
-                APAGA os arquivos em {dir || '(pasta padrao)'} — irreversivel
+                APAGA os arquivos em {dir || '(pasta padrão)'} — irreversível
               </span>
             </span>
           </label>

@@ -88,7 +88,7 @@ export function SettingsView() {
           </Field>
         </div>
 
-        <Field label="Downloads simultaneos">
+        <Field label="Downloads simultâneos">
           <input
             type="number"
             min={1}
@@ -114,7 +114,7 @@ export function SettingsView() {
             checked={cfg.watchClipboard}
             onChange={(e) => set('watchClipboard', e.target.checked)}
           />
-          Sugerir resolver links copiados (monitor da area de transferencia)
+          Sugerir resolver links copiados (monitor da área de transferência)
         </label>
 
         <fieldset className="rounded border border-neutral-800 p-3">

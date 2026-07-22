@@ -1,6 +1,6 @@
 {
   "name": "downmusic",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "App desktop para resolver e baixar musica de multiplas fontes (Spotify -> YouTube, YouTube, Bandcamp, SoundCloud).",
   "main": "out/main/index.js",
   "author": "",

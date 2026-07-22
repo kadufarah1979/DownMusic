@@ -41,7 +41,7 @@ export function QueueList({ compact = false }: { compact?: boolean }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 text-xs text-neutral-400">
             <span className="text-neutral-200">
-              {prog.finished ? 'Concluido' : 'Baixando'} {prog.done}/{prog.total}
+              {prog.finished ? 'Concluído' : 'Baixando'} {prog.done}/{prog.total}
             </span>
             {errorCount > 0 && <span className="text-red-400">· {errorCount} com erro</span>}
             {errorCount > 0 && (

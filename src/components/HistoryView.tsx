@@ -23,7 +23,7 @@ export function HistoryView() {
   }, [])
 
   async function clear() {
-    if (!confirm('Limpar todo o historico de downloads?')) return
+    if (!confirm('Limpar todo o histórico de downloads?')) return
     await api.clearHistory()
     setEntries([])
   }

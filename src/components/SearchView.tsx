@@ -48,7 +48,7 @@ export function SearchView() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && run()}
-            placeholder="Buscar por musica, artista, album..."
+            placeholder="Buscar por música, artista, álbum..."
             className="flex-1 rounded bg-neutral-800 px-3 py-2 text-sm outline-none placeholder:text-neutral-500"
           />
           <button onClick={run} disabled={busy} className="rounded bg-emerald-600 px-4 py-2 text-sm disabled:opacity-50">
@@ -69,7 +69,7 @@ export function SearchView() {
 
       <div className="flex-1 overflow-y-auto p-4">
         {groups.length === 0 ? (
-          <p className="text-sm text-neutral-500">Sem resultados. Faca uma busca.</p>
+          <p className="text-sm text-neutral-500">Sem resultados. Faça uma busca.</p>
         ) : (
           <div className="space-y-6">
             {groups.map((g) => (

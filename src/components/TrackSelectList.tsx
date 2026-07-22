@@ -114,7 +114,7 @@ export function TrackSelectList({
               </span>
               {isDownloaded?.(t) && (
                 <span
-                  title="Voce ja baixou esta musica um dia"
+                  title="Você já baixou esta música um dia"
                   className="whitespace-nowrap rounded bg-emerald-900/60 px-2 py-0.5 text-xs text-emerald-300"
                 >
                   ✓ Baixado
