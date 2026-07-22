@@ -74,18 +74,15 @@ jobs:
           files: dist/*.exe
 
   macos:
-    # matriz de arquitetura: arm64 (Apple Silicon, runner macos-14) e
-    # x64 (Intel, runner macos-13). O yt-dlp_macos e universal2; o ffmpeg vem
-    # por arquitetura (ffmpeg-static), evitando dependencia de Rosetta.
+    # AMBAS as arquiteturas sao buildadas no runner ARM (macos-14), que e
+    # confiavel — o macos-13 (Intel) fica cronicamente preso na fila do GitHub.
+    # O app nao tem modulos nativos, entao cross-build x64 no host ARM funciona;
+    # o ffmpeg vem por arquitetura (ffmpeg-static) e o yt-dlp_macos e universal2.
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - runner: macos-14
-            arch: arm64
-          - runner: macos-13
-            arch: x64
-    runs-on: ${{ matrix.runner }}
+        arch: [arm64, x64]
+    runs-on: macos-14
     env:
       # sem certificado de assinatura no CI: evita a tentativa de codesign/notarize
       CSC_IDENTITY_AUTO_DISCOVERY: false
@@ -102,8 +99,9 @@ jobs:
           curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o resources/bin/yt-dlp
           curl -L https://github.com/eugeneware/ffmpeg-static/releases/latest/download/ffmpeg-darwin-${{ matrix.arch }} -o resources/bin/ffmpeg
           chmod +x resources/bin/yt-dlp resources/bin/ffmpeg
-      # testes unitarios rodam so no job Linux (varios assumem caminhos POSIX)
-      - run: npm run dist:mac
+      # testes unitarios rodam so no job Linux (varios assumem caminhos POSIX);
+      # --${arch} faz o cross-build da arquitetura alvo no host ARM
+      - run: npm run build && npx electron-builder --mac dmg zip --${{ matrix.arch }} --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: downmusic-macos-${{ matrix.arch }}
