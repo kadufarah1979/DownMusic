@@ -61,17 +61,25 @@ Requisitos de runtime (distros recentes, ex. Ubuntu 24.04):
 
 ## Instalacao (usuarios finais)
 
-Baixe o instalador da sua plataforma em
-**[Releases](https://github.com/kadufarah1979/DownMusic/releases)** (ou nos
-artefatos da aba **Actions**, em cada build). `yt-dlp` e `ffmpeg` ja vem
-embarcados no app — nao precisa instalar mais nada.
+📥 **Baixe a ultima versao:**
+**[Releases (latest)](https://github.com/kadufarah1979/DownMusic/releases/latest)**
+— ou use os links diretos por plataforma abaixo. `yt-dlp` e `ffmpeg` ja vem
+embarcados no app; nao precisa instalar mais nada.
 
-Os instaladores sao gerados automaticamente pelo GitHub Actions
-(`.github/workflows/build.yml`) para Windows, macOS e Linux.
+| Plataforma | Download direto |
+|---|---|
+| 🪟 Windows | [DownMusic.Setup.0.1.1.exe](https://github.com/kadufarah1979/DownMusic/releases/download/v0.1.1/DownMusic.Setup.0.1.1.exe) |
+| 🍎 macOS Apple Silicon | [DownMusic-0.1.1-arm64.dmg](https://github.com/kadufarah1979/DownMusic/releases/download/v0.1.1/DownMusic-0.1.1-arm64.dmg) |
+| 🍎 macOS Intel | [DownMusic-0.1.1-x64.dmg](https://github.com/kadufarah1979/DownMusic/releases/download/v0.1.1/DownMusic-0.1.1-x64.dmg) |
+| 🐧 Linux | [DownMusic-0.1.1.AppImage](https://github.com/kadufarah1979/DownMusic/releases/download/v0.1.1/DownMusic-0.1.1.AppImage) |
+
+> Os links diretos apontam para a `v0.1.1`. Para sempre pegar a mais nova, use a
+> pagina **[Releases (latest)](https://github.com/kadufarah1979/DownMusic/releases/latest)**.
+> Os instaladores sao gerados pelo GitHub Actions (`.github/workflows/build.yml`).
 
 ### Windows
 
-1. Baixe o `DownMusic.Setup.<versao>.exe` (ex.: `DownMusic.Setup.0.1.0.exe`).
+1. Baixe o **[DownMusic.Setup.0.1.1.exe](https://github.com/kadufarah1979/DownMusic/releases/download/v0.1.1/DownMusic.Setup.0.1.1.exe)**.
 2. Execute. Como o instalador **nao e assinado**, o **SmartScreen** pode avisar:
    clique em **Mais informacoes → Executar assim mesmo**.
 3. Siga o assistente — da para escolher a pasta de instalacao. No fim, o
@@ -82,9 +90,10 @@ Os instaladores sao gerados automaticamente pelo GitHub Actions
 > O CI gera duas builds: **Apple Silicon** (`-arm64`, M1/M2/M3+) e **Intel**
 > (`-x64`). Baixe a que corresponde ao seu Mac (menu Apple → Sobre este Mac).
 
-1. Baixe o `DownMusic-<versao>-arm64.dmg` (Apple Silicon) ou
-   `DownMusic-<versao>-x64.dmg` (Intel), abra e arraste o **DownMusic**
-   para a pasta **Applications**.
+1. Baixe o **[DownMusic-0.1.1-arm64.dmg](https://github.com/kadufarah1979/DownMusic/releases/download/v0.1.1/DownMusic-0.1.1-arm64.dmg)**
+   (Apple Silicon) ou
+   **[DownMusic-0.1.1-x64.dmg](https://github.com/kadufarah1979/DownMusic/releases/download/v0.1.1/DownMusic-0.1.1-x64.dmg)**
+   (Intel), abra e arraste o **DownMusic** para a pasta **Applications**.
 2. Como o app **nao e assinado/notarizado**, o Gatekeeper bloqueia na primeira
    abertura. Contorne de uma destas formas:
    - **Clique com o botao direito no app → Abrir** e confirme em **Abrir**; ou
