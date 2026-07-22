@@ -74,7 +74,18 @@ jobs:
           files: dist/*.exe
 
   macos:
-    runs-on: macos-latest
+    # matriz de arquitetura: arm64 (Apple Silicon, runner macos-14) e
+    # x64 (Intel, runner macos-13). O yt-dlp_macos e universal2; o ffmpeg vem
+    # por arquitetura (ffmpeg-static), evitando dependencia de Rosetta.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-13
+            arch: x64
+    runs-on: ${{ matrix.runner }}
     env:
       # sem certificado de assinatura no CI: evita a tentativa de codesign/notarize
       CSC_IDENTITY_AUTO_DISCOVERY: false
@@ -85,19 +96,17 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Baixar yt-dlp e ffmpeg (macOS)
+      - name: Baixar yt-dlp e ffmpeg (macOS ${{ matrix.arch }})
         run: |
           mkdir -p resources/bin
           curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o resources/bin/yt-dlp
-          curl -L https://evermeet.cx/ffmpeg/getrelease/zip -o /tmp/ffmpeg.zip
-          unzip -o /tmp/ffmpeg.zip -d /tmp/ffmpeg
-          cp /tmp/ffmpeg/ffmpeg resources/bin/ffmpeg
+          curl -L https://github.com/eugeneware/ffmpeg-static/releases/latest/download/ffmpeg-darwin-${{ matrix.arch }} -o resources/bin/ffmpeg
           chmod +x resources/bin/yt-dlp resources/bin/ffmpeg
       # testes unitarios rodam so no job Linux (varios assumem caminhos POSIX)
       - run: npm run dist:mac
       - uses: actions/upload-artifact@v4
         with:
-          name: downmusic-macos
+          name: downmusic-macos-${{ matrix.arch }}
           path: |
             dist/*.dmg
             dist/*.zip

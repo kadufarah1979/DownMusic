@@ -79,11 +79,11 @@ Os instaladores sao gerados automaticamente pelo GitHub Actions
 
 ### macOS
 
-> A build do CI e para **Apple Silicon (M1/M2/M3+)**, pois o runner
-> `macos-latest` do GitHub e ARM. Em Mac Intel, gere localmente com
-> `npm run dist:mac` ou pela build de source.
+> O CI gera duas builds: **Apple Silicon** (`-arm64`, M1/M2/M3+) e **Intel**
+> (`-x64`). Baixe a que corresponde ao seu Mac (menu Apple → Sobre este Mac).
 
-1. Baixe o `DownMusic-<versao>-arm64.dmg`, abra e arraste o **DownMusic**
+1. Baixe o `DownMusic-<versao>-arm64.dmg` (Apple Silicon) ou
+   `DownMusic-<versao>-x64.dmg` (Intel), abra e arraste o **DownMusic**
    para a pasta **Applications**.
 2. Como o app **nao e assinado/notarizado**, o Gatekeeper bloqueia na primeira
    abertura. Contorne de uma destas formas:
