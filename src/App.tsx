@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { UrlBar } from './components/UrlBar'
-import { SearchView } from './components/SearchView'
+import { SearchResults } from './components/SearchResults'
 import { QueueList } from './components/QueueList'
 import { SettingsView } from './components/SettingsView'
 import { HistoryView } from './components/HistoryView'
@@ -10,13 +10,14 @@ import { PlaylistsView } from './components/PlaylistsView'
 import { TrackSelectList } from './components/TrackSelectList'
 import { useDownloadedChecker } from './lib/downloaded'
 import { api } from './ipc'
-import type { TrackMeta } from '@shared/types'
+import type { TrackMeta, SearchGroup } from '@shared/types'
 
-type Tab = 'download' | 'search' | 'playlists' | 'history' | 'organize' | 'settings' | 'help'
+type Tab = 'download' | 'playlists' | 'history' | 'organize' | 'settings' | 'help'
 
 export function App() {
   const [tab, setTab] = useState<Tab>('download')
   const [resolved, setResolved] = useState<TrackMeta[]>([])
+  const [searchGroups, setSearchGroups] = useState<SearchGroup[] | null>(null)
   const [downloadDir, setDownloadDir] = useState('')
   const [clipUrl, setClipUrl] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
@@ -29,8 +30,15 @@ export function App() {
     api.getConfig().then((c) => setDownloadDir(c.outputDir))
   }, [])
 
-  // monitor de clipboard: sugestao discreta quando um link suportado e copiado
-  useEffect(() => api.onClipboardLink((url) => setClipUrl(url)), [])
+  // monitor de clipboard: link copiado pré-preenche a barra de URL (aba Download)
+  useEffect(
+    () =>
+      api.onClipboardLink((url) => {
+        setClipUrl(url)
+        setTab('download')
+      }),
+    []
+  )
 
   // drag & drop de link em qualquer lugar da janela
   useEffect(() => {
@@ -58,9 +66,17 @@ export function App() {
     }
   }, [])
 
-  // ao resolver uma nova lista, recomeca na pasta padrao atual
+  // ao carregar uma nova lista (link), recomeca na pasta padrao atual e limpa a busca
   function onResolved(tracks: TrackMeta[]) {
     setResolved(tracks)
+    setSearchGroups(null)
+    api.getConfig().then((c) => setDownloadDir(c.outputDir))
+  }
+
+  // ao buscar por texto, mostra os resultados agrupados e limpa a lista resolvida
+  function onSearched(groups: SearchGroup[]) {
+    setSearchGroups(groups)
+    setResolved([])
     api.getConfig().then((c) => setDownloadDir(c.outputDir))
   }
 
@@ -95,7 +111,6 @@ export function App() {
         <h1 className="text-lg font-semibold">DownMusic</h1>
         <nav className="flex gap-1">
           <TabButton active={tab === 'download'} onClick={() => setTab('download')}>Download</TabButton>
-          <TabButton active={tab === 'search'} onClick={() => setTab('search')}>Busca</TabButton>
           <TabButton active={tab === 'playlists'} onClick={() => setTab('playlists')}>Playlists</TabButton>
           <TabButton active={tab === 'history'} onClick={() => setTab('history')}>Histórico</TabButton>
           <TabButton active={tab === 'organize'} onClick={() => setTab('organize')}>Organizar</TabButton>
@@ -111,27 +126,9 @@ export function App() {
         </button>
       </header>
 
-      {clipUrl && (
-        <div className="flex items-center gap-3 border-b border-emerald-800/60 bg-emerald-950/40 px-4 py-2 text-xs">
-          <span className="text-emerald-300">🔗 Link copiado detectado:</span>
-          <span className="min-w-0 flex-1 truncate text-neutral-300">{clipUrl}</span>
-          <button
-            onClick={() => resolveExternal(clipUrl)}
-            className="shrink-0 rounded bg-emerald-600 px-3 py-1 hover:bg-emerald-500"
-          >
-            Resolver
-          </button>
-          <button
-            onClick={() => setClipUrl(null)}
-            className="shrink-0 rounded bg-neutral-700 px-3 py-1 hover:bg-neutral-600"
-          >
-            Ignorar
-          </button>
-        </div>
-      )}
       {extBusy && (
         <div className="border-b border-neutral-800 bg-neutral-800/50 px-4 py-2 text-xs text-emerald-400">
-          Resolvendo link…
+          Carregando faixas…
         </div>
       )}
       {extError && (
@@ -146,16 +143,21 @@ export function App() {
       <main className="relative flex flex-1 flex-col overflow-hidden">
         {dragging && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center border-2 border-dashed border-emerald-500 bg-neutral-900/80">
-            <p className="text-lg font-medium text-emerald-300">Solte o link para resolver</p>
+            <p className="text-lg font-medium text-emerald-300">Solte o link para carregar as faixas</p>
           </div>
         )}
         {tab === 'download' && (
           <div className="flex flex-1 flex-col overflow-hidden">
-            <UrlBar onResolved={onResolved} />
+            <UrlBar
+              onResolved={onResolved}
+              onSearched={onSearched}
+              prefill={clipUrl}
+              onConsumePrefill={() => setClipUrl(null)}
+            />
             {resolved.length > 0 && (
               <div className="flex min-h-0 flex-1 flex-col border-b border-neutral-800">
                 <p className="px-4 pb-2 pt-4 text-xs text-neutral-400">
-                  {resolved.length} faixa(s) resolvida(s) — desmarque o que não quer e enfileire:
+                  {resolved.length} faixa(s) carregada(s) — desmarque o que não quer e enfileire:
                 </p>
                 <div className="flex items-center gap-2 px-4 pb-2 text-xs text-neutral-400">
                   <span className="shrink-0">Baixar em:</span>
@@ -180,10 +182,18 @@ export function App() {
                 </div>
               </div>
             )}
-            <QueueList compact={resolved.length > 0} />
+            {searchGroups && (
+              <div className="min-h-0 flex-1 overflow-y-auto border-b border-neutral-800 p-4">
+                {searchGroups.length === 0 || searchGroups.every((g) => g.tracks.length === 0) ? (
+                  <p className="text-sm text-neutral-500">Nenhum resultado para a busca.</p>
+                ) : (
+                  <SearchResults groups={searchGroups} outputDir={downloadDir || undefined} />
+                )}
+              </div>
+            )}
+            <QueueList compact={resolved.length > 0 || !!searchGroups} />
           </div>
         )}
-        {tab === 'search' && <SearchView />}
         {tab === 'playlists' && <PlaylistsView />}
         {tab === 'history' && <HistoryView />}
         {tab === 'organize' && <OrganizeView />}

@@ -114,7 +114,7 @@ export function SettingsView() {
             checked={cfg.watchClipboard}
             onChange={(e) => set('watchClipboard', e.target.checked)}
           />
-          Sugerir resolver links copiados (monitor da área de transferência)
+          Preencher a barra ao copiar um link (monitor da área de transferência)
         </label>
 
         <fieldset className="rounded border border-neutral-800 p-3">

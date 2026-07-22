@@ -88,7 +88,7 @@ export function HelpView({ onGoToSettings }: { onGoToSettings: () => void }) {
             <li><strong className="text-neutral-100">Organizar:</strong> analise uma pasta, enriqueça as tags (Deezer) e aplique a reorganização por gênero (estilo Rekordbox).</li>
           </ul>
           <p className="mt-2 text-xs text-neutral-500">
-            💡 O monitor da área de transferência sugere resolver links copiados — ligue/desligue em Configurações.
+            💡 Ao copiar um link suportado, ele é colado automaticamente na barra da aba Download — ligue/desligue em Configurações.
           </p>
         </Section>
 
@@ -96,7 +96,7 @@ export function HelpView({ onGoToSettings }: { onGoToSettings: () => void }) {
         <Section title="Configurar o Spotify (Client ID e Client Secret)">
           <p className="text-sm text-neutral-300">
             O Spotify é usado apenas para <strong>metadados</strong> (título, artista, capa, gênero). O áudio é baixado
-            de fontes públicas via YouTube. Para resolver links do Spotify, informe suas credenciais:
+            de fontes públicas via YouTube. Para carregar links do Spotify, informe suas credenciais:
           </p>
           <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-neutral-300">
             <li>Acesse o <button onClick={() => api.openExternal(SPOTIFY_DASHBOARD)} className="text-emerald-400 underline hover:text-emerald-300">Dashboard do Spotify</button> e faça login.</li>
