@@ -59,6 +59,42 @@ Requisitos de runtime (distros recentes, ex. Ubuntu 24.04):
 
 `yt-dlp` e `ffmpeg` ja vem embarcados no AppImage — nao precisa instalar nada.
 
+## Instalacao (usuarios finais)
+
+Baixe o instalador da sua plataforma em
+**[Releases](https://github.com/kadufarah1979/DownMusic/releases)** (ou nos
+artefatos da aba **Actions**, em cada build). `yt-dlp` e `ffmpeg` ja vem
+embarcados no app — nao precisa instalar mais nada.
+
+Os instaladores sao gerados automaticamente pelo GitHub Actions
+(`.github/workflows/build.yml`) para Windows, macOS e Linux.
+
+### Windows
+
+1. Baixe o `DownMusic.Setup.<versao>.exe` (ex.: `DownMusic.Setup.0.1.0.exe`).
+2. Execute. Como o instalador **nao e assinado**, o **SmartScreen** pode avisar:
+   clique em **Mais informacoes → Executar assim mesmo**.
+3. Siga o assistente — da para escolher a pasta de instalacao. No fim, o
+   DownMusic aparece no Menu Iniciar e na area de trabalho.
+
+### macOS
+
+> A build do CI e para **Apple Silicon (M1/M2/M3+)**, pois o runner
+> `macos-latest` do GitHub e ARM. Em Mac Intel, gere localmente com
+> `npm run dist:mac` ou pela build de source.
+
+1. Baixe o `DownMusic-<versao>-arm64.dmg`, abra e arraste o **DownMusic**
+   para a pasta **Applications**.
+2. Como o app **nao e assinado/notarizado**, o Gatekeeper bloqueia na primeira
+   abertura. Contorne de uma destas formas:
+   - **Clique com o botao direito no app → Abrir** e confirme em **Abrir**; ou
+   - remova a quarentena pelo Terminal:
+     ```bash
+     xattr -dr com.apple.quarantine /Applications/DownMusic.app
+     ```
+3. Se o macOS disser que o "app esta danificado", use o comando `xattr` acima —
+   o aviso e por falta de assinatura, nao corrupcao.
+
 ## Arquitetura
 
 Ver `docs/superpowers/specs/2026-07-19-downmusic-desktop-design.md`.
