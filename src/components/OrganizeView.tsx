@@ -67,22 +67,24 @@ export function OrganizeView() {
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
         {busy && (
-          <div>
+          <div className="rounded bg-neutral-800/60 p-4">
             <p className="mb-2 text-sm text-emerald-400">{busy}</p>
-            {progress?.phase === 'enrich' && (
+            {(progress?.phase === 'enrich' || progress?.phase === 'apply') && (
               <>
                 <ProgressBar done={progress.done} total={progress.total} />
                 <p className="mt-1 text-xs text-neutral-400">
-                  {progress.total > 0
-                    ? `Enriquecendo tags via Deezer — ${progress.done}/${progress.total} faixa(s) com lacunas`
-                    : 'Preparando enriquecimento…'}
+                  {progress.phase === 'enrich'
+                    ? progress.total > 0
+                      ? `Enriquecendo tags via Deezer — ${progress.done}/${progress.total} faixa(s) com lacunas`
+                      : 'Preparando enriquecimento…'
+                    : `Aplicando ${progress.done}/${progress.total} arquivo(s)…`}
                 </p>
               </>
             )}
           </div>
         )}
 
-        {report && (
+        {!busy && report && (
           <div className="grid grid-cols-3 gap-2 text-xs">
             <Card label="Faixas" value={report.total} />
             <Card label="Gêneros" value={report.genres.length} />
@@ -95,7 +97,7 @@ export function OrganizeView() {
           </div>
         )}
 
-        {report && (
+        {!busy && report && (
           <div className="flex items-center gap-2">
             <label className="text-xs text-neutral-400">Template:</label>
             <input value={template} onChange={(e) => setTemplate(e.target.value)} className="flex-1 rounded bg-neutral-800 px-2 py-1 text-xs" />
@@ -103,7 +105,7 @@ export function OrganizeView() {
           </div>
         )}
 
-        {plan && (
+        {!busy && plan && (
           <div>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs text-neutral-400">
@@ -125,12 +127,6 @@ export function OrganizeView() {
           </div>
         )}
 
-        {progress?.phase === 'apply' && (
-          <div>
-            <p className="mb-2 text-sm text-emerald-400">Aplicando {progress.done}/{progress.total}…</p>
-            <ProgressBar done={progress.done} total={progress.total} />
-          </div>
-        )}
         {result && <p className="text-sm text-emerald-300">{result}</p>}
       </div>
     </div>
