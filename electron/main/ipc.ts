@@ -1,6 +1,7 @@
 import { ipcMain, dialog, shell, app, BrowserWindow } from 'electron'
 import { mkdir } from 'node:fs/promises'
 import { isSafeToClear, clearDir } from './reset'
+import { checkForUpdate } from './updater'
 import type { Resolver } from './resolver'
 import type { QueueManager } from './queue'
 import type { ConfigStore } from './config'
@@ -38,7 +39,9 @@ export const CH = {
   libraryPlan: 'library:plan',
   libraryApply: 'library:apply',
   libraryProgress: 'library:progress',
-  clipboardLink: 'clipboard:link'
+  clipboardLink: 'clipboard:link',
+  appVersion: 'app:getVersion',
+  appCheckUpdate: 'app:checkUpdate'
 } as const
 
 export function registerIpc(
@@ -57,6 +60,8 @@ export function registerIpc(
   ipcMain.handle(CH.libraryScanAnalyze, (_e, dir: string) => library.scanAndAnalyze(dir))
   ipcMain.handle(CH.libraryPlan, (_e, dir: string, template: string) => library.plan(dir, template))
   ipcMain.handle(CH.libraryApply, (_e, plan: OrganizationPlan) => library.apply(plan))
+  ipcMain.handle(CH.appVersion, () => app.getVersion())
+  ipcMain.handle(CH.appCheckUpdate, () => checkForUpdate(app.getVersion()))
   library.executor.on('progress', (p: unknown) => {
     if (!win.isDestroyed()) win.webContents.send(CH.libraryProgress, p)
   })

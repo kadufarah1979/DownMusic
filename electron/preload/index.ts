@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { AppConfig, QueueItem, TrackMeta, SearchGroup, SourceId, PlaylistSubscription } from '../../shared/types'
 import type { HistoryEntry } from '../../shared/history'
 import type { AnalysisReport, OrganizationPlan } from '../../shared/library'
+import type { UpdateInfo } from '../../shared/version'
 
 type ApplyResult = { moved: number; retagged: number; quarantined: number; failed: { path: string; error: string }[] }
 type LibraryProgress = { done: number; total: number; current: string; phase?: 'enrich' | 'apply' }
@@ -33,7 +34,9 @@ const CH = {
   libraryPlan: 'library:plan',
   libraryApply: 'library:apply',
   libraryProgress: 'library:progress',
-  clipboardLink: 'clipboard:link'
+  clipboardLink: 'clipboard:link',
+  appVersion: 'app:getVersion',
+  appCheckUpdate: 'app:checkUpdate'
 } as const
 
 /** API tipada exposta ao renderer via contextBridge. */
@@ -82,7 +85,9 @@ const api = {
     const listener = (_e: unknown, url: string) => cb(url)
     ipcRenderer.on(CH.clipboardLink, listener)
     return () => ipcRenderer.removeListener(CH.clipboardLink, listener)
-  }
+  },
+  getVersion: (): Promise<string> => ipcRenderer.invoke(CH.appVersion),
+  checkUpdate: (): Promise<UpdateInfo> => ipcRenderer.invoke(CH.appCheckUpdate)
 }
 
 contextBridge.exposeInMainWorld('downmusic', api)

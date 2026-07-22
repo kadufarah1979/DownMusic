@@ -5,13 +5,14 @@ import { QueueList } from './components/QueueList'
 import { SettingsView } from './components/SettingsView'
 import { HistoryView } from './components/HistoryView'
 import { OrganizeView } from './components/OrganizeView'
+import { HelpView } from './components/HelpView'
 import { PlaylistsView } from './components/PlaylistsView'
 import { TrackSelectList } from './components/TrackSelectList'
 import { useDownloadedChecker } from './lib/downloaded'
 import { api } from './ipc'
 import type { TrackMeta } from '@shared/types'
 
-type Tab = 'download' | 'search' | 'playlists' | 'history' | 'organize' | 'settings'
+type Tab = 'download' | 'search' | 'playlists' | 'history' | 'organize' | 'settings' | 'help'
 
 export function App() {
   const [tab, setTab] = useState<Tab>('download')
@@ -94,6 +95,7 @@ export function App() {
           <TabButton active={tab === 'history'} onClick={() => setTab('history')}>Historico</TabButton>
           <TabButton active={tab === 'organize'} onClick={() => setTab('organize')}>Organizar</TabButton>
           <TabButton active={tab === 'settings'} onClick={() => setTab('settings')}>Configuracoes</TabButton>
+          <TabButton active={tab === 'help'} onClick={() => setTab('help')}>Ajuda</TabButton>
         </nav>
         <button
           onClick={() => api.openFolder()}
@@ -180,6 +182,7 @@ export function App() {
         {tab === 'history' && <HistoryView />}
         {tab === 'organize' && <OrganizeView />}
         {tab === 'settings' && <SettingsView />}
+        {tab === 'help' && <HelpView onGoToSettings={() => setTab('settings')} />}
       </main>
     </div>
   )
