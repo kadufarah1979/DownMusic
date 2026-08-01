@@ -88,6 +88,12 @@ export interface AppConfig {
   }
 }
 
+/** Binarios externos que responderam na inicializacao. */
+export interface BinariesStatus {
+  ytdlp: boolean
+  ffmpeg: boolean
+}
+
 export const DEFAULT_CONFIG: AppConfig = {
   outputDir: '',
   nameTemplate: '%artist%/%album%/%track% - %title%',

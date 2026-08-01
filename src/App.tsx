@@ -41,7 +41,16 @@ export function App() {
   const [dragging, setDragging] = useState(false)
   const [extBusy, setExtBusy] = useState(false)
   const [extError, setExtError] = useState<string | null>(null)
+  const [missingBins, setMissingBins] = useState<string[]>([])
   const isDownloaded = useDownloadedChecker()
+
+  // yt-dlp/ffmpeg ausentes: o app abre, mas nenhum download conclui
+  useEffect(() => {
+    api.getBinaries().then((b) => {
+      const missing = [!b.ytdlp && 'yt-dlp', !b.ffmpeg && 'ffmpeg'].filter(Boolean) as string[]
+      setMissingBins(missing)
+    })
+  }, [])
 
   // pasta padrao (Configuracoes) — usada como ponto de partida de cada lista
   useEffect(() => {
@@ -144,6 +153,16 @@ export function App() {
         </button>
       </header>
 
+      {missingBins.length > 0 && (
+        <div className="border-b border-amber-900/60 bg-amber-950/30 px-4 py-2 text-xs text-amber-300">
+          <span className="font-medium">
+            {missingBins.join(' e ')} não {missingBins.length > 1 ? 'foram encontrados' : 'foi encontrado'}.
+          </span>{' '}
+          Os downloads vão falhar até instalar {missingBins.length > 1 ? 'os dois' : 'o binário'} e deixar no PATH
+          {missingBins.includes('ffmpeg') && ' (a conversão e as tags dependem do ffmpeg)'}. Depois, reinicie o
+          DownMusic.
+        </div>
+      )}
       {extBusy && (
         <div className="border-b border-neutral-800 bg-neutral-800/50 px-4 py-2 text-xs text-emerald-400">
           Carregando faixas…

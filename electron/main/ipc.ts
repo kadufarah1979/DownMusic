@@ -3,7 +3,7 @@ import { mkdir } from 'node:fs/promises'
 import { isSafeToClear, clearDir } from './reset'
 import { checkForUpdate } from './updater'
 import { findExtended } from './extendedFinder'
-import type { TrackMeta } from '../../shared/types'
+import type { TrackMeta, BinariesStatus } from '../../shared/types'
 import type { Resolver } from './resolver'
 import type { QueueManager } from './queue'
 import type { ConfigStore } from './config'
@@ -44,7 +44,8 @@ export const CH = {
   clipboardLink: 'clipboard:link',
   appVersion: 'app:getVersion',
   appCheckUpdate: 'app:checkUpdate',
-  searchFindExtended: 'search:findExtended'
+  searchFindExtended: 'search:findExtended',
+  binariesStatus: 'binaries:status'
 } as const
 
 export function registerIpc(
@@ -56,13 +57,16 @@ export function registerIpc(
     history: HistoryStore
     playlists: PlaylistService
     library: LibraryService
+    /** Resultado da checagem de yt-dlp/ffmpeg feita na inicializacao. */
+    binaries: BinariesStatus
   }
 ): void {
-  const { resolver, queue, config, history, playlists, library } = deps
+  const { resolver, queue, config, history, playlists, library, binaries } = deps
 
   ipcMain.handle(CH.libraryScanAnalyze, (_e, dir: string) => library.scanAndAnalyze(dir))
   ipcMain.handle(CH.libraryPlan, (_e, dir: string, template: string) => library.plan(dir, template))
   ipcMain.handle(CH.libraryApply, (_e, plan: OrganizationPlan) => library.apply(plan))
+  ipcMain.handle(CH.binariesStatus, () => binaries)
   ipcMain.handle(CH.appVersion, () => app.getVersion())
   ipcMain.handle(CH.appCheckUpdate, () => checkForUpdate(app.getVersion()))
   ipcMain.handle(CH.searchFindExtended, (_e, track: TrackMeta) => findExtended(resolver, track))
