@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { qualityToBitrate, buildConvertArgs, buildRetagArgs, FfmpegEngine, type ProcRunner } from './ffmpeg'
 import type { TrackMeta } from '../../shared/types'
 
