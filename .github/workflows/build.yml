@@ -23,6 +23,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # antes do download dos binarios: nao dependem deles e falham em segundos
+      - run: npm run typecheck
+      - run: npm run lint
       - name: Baixar yt-dlp e ffmpeg (Linux)
         run: |
           mkdir -p resources/bin
