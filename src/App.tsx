@@ -174,7 +174,6 @@ export function App() {
                 <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
                   <TrackSelectList
                     tracks={resolved}
-                    onEnqueued={() => setResolved([])}
                     isDownloaded={isDownloaded}
                     outputDir={downloadDir || undefined}
                     onReplace={replaceResolved}
