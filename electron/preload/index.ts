@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AppConfig, QueueItem, TrackMeta, SearchGroup, SourceId, PlaylistSubscription } from '../../shared/types'
+import type { AppConfig, QueueItem, TrackMeta, SearchGroup, SourceId, PlaylistSubscription, BinariesStatus } from '../../shared/types'
 import type { HistoryEntry } from '../../shared/history'
 import type { AnalysisReport, OrganizationPlan } from '../../shared/library'
 import type { UpdateInfo } from '../../shared/version'
@@ -37,7 +37,8 @@ const CH = {
   clipboardLink: 'clipboard:link',
   appVersion: 'app:getVersion',
   appCheckUpdate: 'app:checkUpdate',
-  searchFindExtended: 'search:findExtended'
+  searchFindExtended: 'search:findExtended',
+  binariesStatus: 'binaries:status'
 } as const
 
 /** API tipada exposta ao renderer via contextBridge. */
@@ -90,7 +91,8 @@ const api = {
   getVersion: (): Promise<string> => ipcRenderer.invoke(CH.appVersion),
   checkUpdate: (): Promise<UpdateInfo> => ipcRenderer.invoke(CH.appCheckUpdate),
   findExtended: (track: TrackMeta): Promise<Partial<Record<SourceId, TrackMeta>>> =>
-    ipcRenderer.invoke(CH.searchFindExtended, track)
+    ipcRenderer.invoke(CH.searchFindExtended, track),
+  getBinaries: (): Promise<BinariesStatus> => ipcRenderer.invoke(CH.binariesStatus)
 }
 
 contextBridge.exposeInMainWorld('downmusic', api)

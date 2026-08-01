@@ -7,7 +7,7 @@ import { Tagger } from './tagger'
 import { registerIpc } from './ipc'
 import { HistoryStore } from './history'
 import { PlaylistStore, PlaylistService } from './playlists'
-import { binPath } from './binaries'
+import { binPath, checkBinaries } from './binaries'
 import { YtDlpEngine } from '../engines/ytdlp'
 import { FfmpegEngine } from '../engines/ffmpeg'
 import { SpotifySource } from '../sources/spotify'
@@ -25,6 +25,7 @@ import { LibraryScanner, MusicMetadataReader } from './libraryScanner'
 import { OrganizationExecutor } from './organizationExecutor'
 import { LibraryService } from './library'
 import { homedir } from 'node:os'
+import type { BinariesStatus } from '../../shared/types'
 
 /** Monta o grafo de dependencias (composition root). */
 function buildCore() {
@@ -75,7 +76,9 @@ function buildCore() {
   return { config, resolver, queue, history, playlists, library, ytdlp, ffmpeg }
 }
 
-function createWindow(core: ReturnType<typeof buildCore>): void {
+type AppCore = ReturnType<typeof buildCore> & { binaries: BinariesStatus }
+
+function createWindow(core: AppCore): void {
   const win = new BrowserWindow({
     width: 1000,
     height: 700,
@@ -113,11 +116,11 @@ function createWindow(core: ReturnType<typeof buildCore>): void {
 app.whenReady().then(async () => {
   const core = buildCore()
 
-  // TODO: avisar na UI se yt-dlp/ffmpeg nao estiverem no PATH.
-  void core.ytdlp.available()
-  void core.ffmpeg.available()
+  // sem yt-dlp/ffmpeg o app abre mas nenhum download conclui; o renderer
+  // consulta este resultado (CH.binariesStatus) e avisa em um banner.
+  const binaries = await checkBinaries(core.ytdlp, core.ffmpeg)
 
-  createWindow(core)
+  createWindow({ ...core, binaries })
 
   // sincroniza as playlists cadastradas ao abrir, se o usuario ativou (nao bloqueia a UI)
   if (core.config.get().syncOnStartup) {
@@ -127,7 +130,7 @@ app.whenReady().then(async () => {
   }
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow(core)
+    if (BrowserWindow.getAllWindows().length === 0) createWindow({ ...core, binaries })
   })
 })
 
