@@ -27,13 +27,19 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - name: Baixar yt-dlp e ffmpeg (Linux)
+        # -f: resposta de erro vira falha do curl, em vez de virar arquivo
+        # invalido que so estoura la na frente (ja aconteceu: HTML salvo como
+        # .tar.xz derrubou o tar). --retry cobre indisponibilidade momentanea.
         run: |
           mkdir -p resources/bin
-          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o resources/bin/yt-dlp
-          curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o /tmp/ffmpeg.tar.xz
+          DL="curl -fL --retry 3 --retry-delay 5 --retry-all-errors --max-time 180"
+          $DL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o resources/bin/yt-dlp
+          $DL https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz -o /tmp/ffmpeg.tar.xz
           tar -xf /tmp/ffmpeg.tar.xz -C /tmp
-          cp /tmp/ffmpeg-*-amd64-static/ffmpeg resources/bin/ffmpeg
+          cp /tmp/ffmpeg-master-latest-linux64-gpl/bin/ffmpeg resources/bin/ffmpeg
           chmod +x resources/bin/yt-dlp resources/bin/ffmpeg
+          resources/bin/ffmpeg -version | head -1
+          resources/bin/yt-dlp --version
       - run: npm test
       - run: npm run dist:linux
       - uses: actions/upload-artifact@v4
@@ -99,8 +105,9 @@ jobs:
       - name: Baixar yt-dlp e ffmpeg (macOS ${{ matrix.arch }})
         run: |
           mkdir -p resources/bin
-          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o resources/bin/yt-dlp
-          curl -L https://github.com/eugeneware/ffmpeg-static/releases/latest/download/ffmpeg-darwin-${{ matrix.arch }} -o resources/bin/ffmpeg
+          DL="curl -fL --retry 3 --retry-delay 5 --retry-all-errors --max-time 180"
+          $DL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o resources/bin/yt-dlp
+          $DL https://github.com/eugeneware/ffmpeg-static/releases/latest/download/ffmpeg-darwin-${{ matrix.arch }} -o resources/bin/ffmpeg
           chmod +x resources/bin/yt-dlp resources/bin/ffmpeg
       # testes unitarios rodam so no job Linux (varios assumem caminhos POSIX);
       # --${arch} faz o cross-build da arquitetura alvo no host ARM
