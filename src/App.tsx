@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { UrlBar } from './components/UrlBar'
 import { SearchResults } from './components/SearchResults'
 import { QueueList } from './components/QueueList'
@@ -13,6 +13,24 @@ import { api } from './ipc'
 import type { TrackMeta, SearchGroup } from '@shared/types'
 
 type Tab = 'download' | 'playlists' | 'history' | 'organize' | 'settings' | 'help'
+
+/**
+ * Monta a aba na primeira visita e a mantem montada depois, apenas ocultando-a
+ * quando outra aba esta ativa. Sem isso o `{tab === 'x' && <View/>}` desmonta o
+ * componente a cada troca e joga fora estado caro: as faixas ja resolvidas de
+ * cada playlist e o resultado da analise de biblioteca.
+ *
+ * Ativa usa `contents` — o wrapper nao gera caixa, entao o filho continua
+ * sendo filho direto do <main> e o layout flex fica identico ao de antes.
+ */
+function KeepAlive({ active, children }: { active: boolean; children: ReactNode }) {
+  const [mounted, setMounted] = useState(active)
+  useEffect(() => {
+    if (active) setMounted(true)
+  }, [active])
+  if (!mounted) return null
+  return <div className={active ? 'contents' : 'hidden'}>{children}</div>
+}
 
 export function App() {
   const [tab, setTab] = useState<Tab>('download')
@@ -193,9 +211,13 @@ export function App() {
             <QueueList compact={resolved.length > 0 || !!searchGroups} />
           </div>
         )}
-        {tab === 'playlists' && <PlaylistsView />}
+        <KeepAlive active={tab === 'playlists'}>
+          <PlaylistsView />
+        </KeepAlive>
         {tab === 'history' && <HistoryView />}
-        {tab === 'organize' && <OrganizeView />}
+        <KeepAlive active={tab === 'organize'}>
+          <OrganizeView />
+        </KeepAlive>
         {tab === 'settings' && <SettingsView />}
         {tab === 'help' && <HelpView onGoToSettings={() => setTab('settings')} />}
       </main>
