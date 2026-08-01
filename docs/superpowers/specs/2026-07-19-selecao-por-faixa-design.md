@@ -65,3 +65,13 @@ SearchView
 2. `SearchView` usa `TrackSelectList` por grupo (remove `[+]`/"Enfileirar todos").
 3. Aba Download: `UrlBar` vira `onResolved`; `App` guarda `resolvedTracks` e renderiza `TrackSelectList`.
 4. Verificação (typecheck/tests/build) + validação ao vivo.
+
+---
+
+## Atualização — 2026-08-01 (TASK-1622)
+
+A decisão da aba Download registrada acima — *"'Enfileirar selecionados (N)' enfileira e, via `onEnqueued`, **limpa** `resolvedTracks` (volta a mostrar só a fila)"* — foi **revertida**.
+
+**Motivo.** Baixar a mesma playlist em várias levas (escolher um punhado, ouvir, voltar e escolher mais) é o uso normal, e limpar a lista cobrava um `resolve` inteiro a cada leva. A justificativa original era liberar espaço na tela para a fila; ela caducou quando a `QueueList` ganhou o modo `compact`, acionado justamente por `resolved.length > 0` — os dois blocos já convivem. Os grupos da aba Busca, aliás, nunca limparam (o `SearchResults` não passava `onEnqueued`), então o comportamento também era inconsistente entre as duas telas.
+
+**Como ficou.** Enfileirar **desmarca apenas as faixas enviadas** e mantém a lista montada; a próxima leva começa com a seleção limpa e as já enviadas ganham o selo "✓ Baixado" em tempo real pelo `useDownloadedChecker`. A prop `onEnqueued` do `TrackSelectList` ficou sem consumidor e foi removida. Colar um novo link continua substituindo a lista (`onResolved` inalterado).

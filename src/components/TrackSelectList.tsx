@@ -24,16 +24,16 @@ function fmtDur(sec?: number): string {
  * "Baixar selecionados (N)". Filtro e uma lente: as acoes (marcar todas,
  * baixar, contador) operam sobre as faixas VISIVEIS (filtradas).
  * Reutilizado nos grupos da Busca e nas faixas resolvidas da aba Download.
+ * Enfileirar desmarca as faixas enviadas e MANTEM a lista na tela, para
+ * baixar a mesma playlist em varias levas sem resolver o link de novo.
  */
 export function TrackSelectList({
   tracks,
-  onEnqueued,
   isDownloaded,
   outputDir,
   onReplace
 }: {
   tracks: TrackMeta[]
-  onEnqueued?: () => void
   isDownloaded?: (t: TrackMeta) => boolean
   outputDir?: string
   /** Quando fornecido, habilita "Buscar versões extended" e a troca por faixa. */
@@ -112,10 +112,17 @@ export function TrackSelectList({
     })
   }
 
+  // desmarca so o que foi enfileirado: a lista continua na tela para a
+  // proxima leva da mesma playlist, sem precisar resolver o link de novo
   async function enqueueSelected() {
-    if (visibleSelected.length === 0) return
-    await api.enqueue(visibleSelected, outputDir)
-    onEnqueued?.()
+    const enqueued = visibleSelected
+    if (enqueued.length === 0) return
+    await api.enqueue(enqueued, outputDir)
+    setSelected((prev) => {
+      const next = new Set(prev)
+      enqueued.forEach((t) => next.delete(keyOf(t)))
+      return next
+    })
   }
 
   return (
