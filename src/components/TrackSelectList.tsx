@@ -94,7 +94,8 @@ export function TrackSelectList({
     const k = keyOf(t)
     setSelected((prev) => {
       const next = new Set(prev)
-      next.has(k) ? next.delete(k) : next.add(k)
+      if (next.has(k)) next.delete(k)
+      else next.add(k)
       return next
     })
   }
