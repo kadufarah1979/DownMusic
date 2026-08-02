@@ -6,15 +6,18 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p resources/bin
 
+# mesma fonte e mesmas flags do CI (.github/workflows/build.yml)
+DL=(curl -fsSL --retry 3 --retry-delay 5 --retry-all-errors --max-time 180)
+
 echo "-> yt-dlp (standalone Linux)"
-curl -fsSL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux -o resources/bin/yt-dlp
+"${DL[@]}" https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux -o resources/bin/yt-dlp
 chmod +x resources/bin/yt-dlp
 
 echo "-> ffmpeg (estatico amd64)"
 tmp="$(mktemp -d)"
-curl -fsSL https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o "$tmp/ffmpeg.tar.xz"
+"${DL[@]}" https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz -o "$tmp/ffmpeg.tar.xz"
 tar -xf "$tmp/ffmpeg.tar.xz" -C "$tmp"
-cp "$tmp"/ffmpeg-*-static/ffmpeg resources/bin/ffmpeg
+cp "$tmp"/ffmpeg-master-latest-linux64-gpl/bin/ffmpeg resources/bin/ffmpeg
 chmod +x resources/bin/ffmpeg
 rm -rf "$tmp"
 
