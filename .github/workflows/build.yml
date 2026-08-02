@@ -70,7 +70,7 @@ jobs:
           Expand-Archive -Path $env:TEMP/ffmpeg.zip -DestinationPath $env:TEMP/ffmpeg -Force
           $ff = Get-ChildItem -Path $env:TEMP/ffmpeg -Recurse -Filter ffmpeg.exe | Select-Object -First 1
           Copy-Item $ff.FullName resources/bin/ffmpeg.exe
-      # testes unitarios rodam so no job Linux (varios assumem caminhos POSIX)
+      - run: npm test
       - run: npm run dist:win
       - uses: actions/upload-artifact@v4
         with:
@@ -109,7 +109,11 @@ jobs:
           $DL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o resources/bin/yt-dlp
           $DL https://github.com/eugeneware/ffmpeg-static/releases/latest/download/ffmpeg-darwin-${{ matrix.arch }} -o resources/bin/ffmpeg
           chmod +x resources/bin/yt-dlp resources/bin/ffmpeg
-      # testes unitarios rodam so no job Linux (varios assumem caminhos POSIX);
+      # A suite roda so na perna arm64: a x64 baixa ffmpeg-darwin-x64 num host
+      # ARM, e o fixture de mp3 precisaria de Rosetta para executa-lo. O codigo
+      # testado e o mesmo nas duas pernas, entao a aposta nao compra nada.
+      - if: matrix.arch == 'arm64'
+        run: npm test
       # --${arch} faz o cross-build da arquitetura alvo no host ARM
       - run: npm run build && npx electron-builder --mac dmg zip --${{ matrix.arch }} --publish never
       - uses: actions/upload-artifact@v4
