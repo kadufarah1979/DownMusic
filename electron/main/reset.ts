@@ -2,10 +2,14 @@ import { readdir, rm } from 'node:fs/promises'
 import path, { join, type PlatformPath } from 'node:path'
 
 /**
- * Arvores de sistema: bloqueadas junto com tudo abaixo delas — `/usr/share` e
- * `C:\Windows\System32` sao tao ruins de esvaziar quanto os pais.
+ * Arvores de sistema estaticas: bloqueadas junto com tudo abaixo delas —
+ * `/usr/share` e `C:\Windows\System32` sao tao ruins de esvaziar quanto os pais.
+ *
+ * `/var` NAO entra aqui. E dado variavel, e no macOS o diretorio temporario do
+ * usuario mora em `/var/folders/...` — bloquear a arvore inteira reprovaria uma
+ * pasta perfeitamente legitima (foi o job macos do CI que mostrou isso).
  */
-const SYSTEM_TREES_POSIX = ['/usr', '/etc', '/var', '/boot', '/bin', '/lib']
+const SYSTEM_TREES_POSIX = ['/usr', '/etc', '/boot', '/bin', '/lib']
 const SYSTEM_TREES_WIN32 = [
   'C:\\Windows',
   'C:\\Program Files',
@@ -14,11 +18,11 @@ const SYSTEM_TREES_WIN32 = [
 ]
 
 /**
- * Pastas que guardam as homes: bloqueadas so exatamente. O que esta abaixo e
- * pasta de usuario — `/home/joao/Musica` e um destino legitimo de download.
+ * Bloqueadas so exatamente: o que esta abaixo delas e legitimo. `/home/joao/Musica`
+ * e destino de download; `/var/folders/.../T/x` e o temporario do macOS.
  */
-const HOME_PARENTS_POSIX = ['/home', '/root']
-const HOME_PARENTS_WIN32 = ['C:\\Users']
+const EXACT_ONLY_POSIX = ['/home', '/root', '/var']
+const EXACT_ONLY_WIN32 = ['C:\\Users']
 
 /** Tira barras sobrando do fim, sem comer a raiz (`/`, `C:\`). */
 function trimEnd(p: string, rootLen: number): string {
@@ -56,8 +60,8 @@ export function isSafeToClear(dir: string, home: string, flavor: PlatformPath = 
   if (clean === trimEnd(root, 0)) return false // a propria raiz
   if (clean === trimEnd(norm(home), 0)) return false // a propria home
 
-  const parents = isWindows ? HOME_PARENTS_WIN32 : HOME_PARENTS_POSIX
-  if (parents.some((b) => clean === norm(b))) return false
+  const exact = isWindows ? EXACT_ONLY_WIN32 : EXACT_ONLY_POSIX
+  if (exact.some((b) => clean === norm(b))) return false
 
   const trees = isWindows ? SYSTEM_TREES_WIN32 : SYSTEM_TREES_POSIX
   if (trees.some((b) => clean === norm(b) || clean.startsWith(norm(b) + flavor.sep))) return false
