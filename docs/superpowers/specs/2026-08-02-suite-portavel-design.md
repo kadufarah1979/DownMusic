@@ -36,10 +36,11 @@ O comentário em `.github/workflows/build.yml` diz que "vários assumem caminhos
 | `electron/main/library.test.ts` | **Portável.** O `home: '/home/x'` sequer é lido nesse teste (o executor é um `{}`). |
 | `electron/main/reset.test.ts` | **Não portável, e por um motivo de produção** — abaixo. |
 
-Enquanto isso, **dois arquivos que a lista não menciona quebram de verdade no Windows**:
+Enquanto isso, **três arquivos que a lista não menciona quebram de verdade no Windows**:
 
 - `electron/main/libraryScanner.test.ts:31-32` faz `t.path.replace(dir, '')` e espera `['/a.mp3', '/sub/b.flac']`. Com separador `\`, a comparação falha.
-- `electron/main/organizationPlan.test.ts:14,26,32,37,57` espera `'/root/House/A - Song.mp3'`, mas a produção monta o caminho com `join()` (`organizationPlan.ts:38,43`) — no Windows sai `\root\House\...`.
+- `electron/main/organizationPlan.test.ts:14,26,32,37,57` espera `'/root/House/A - Song.mp3'`, mas a produção monta o caminho com `join()` (`organizationPlan.ts:38,43`) — no Windows sai `\root\House\...`. O caso "idempotente" (linha 42) é pior que os outros: a entrada também é literal, então no Windows ela deixa de bater com o destino calculado e o teste passa a afirmar o contrário do que quer.
+- `electron/main/binaries.test.ts:6-7` (encontrado durante a Fase 2, depois desta tabela ser escrita) chama `binPath` **sem** passar `platform`, então no Windows a função usa a do processo e devolve `\app\resources\bin\yt-dlp.exe` — separador e sufixo diferentes do literal esperado.
 
 Ou seja: substituir literais em massa nos cinco arquivos citados resolveria pouco e mexeria em muito. O critério certo não é "o teste tem uma barra" — é "o teste afirma algo dependente de plataforma".
 
@@ -74,7 +75,8 @@ Isso é bug de produção, e a TASK-1619 restringe o escopo a testes ("código d
 |---|---|
 | `electron/testSupport/ffmpegBin.ts` | **novo** — resolve o ffmpeg do fixture (não é `*.test.ts`, o vitest não coleta) |
 | `electron/main/libraryScanner.test.ts` | usa o resolvedor, trata `error`, compara caminhos com `join` |
-| `electron/main/organizationPlan.test.ts` | expectativas via `join` |
+| `electron/main/organizationPlan.test.ts` | expectativas (e a entrada do caso idempotente) via `join` |
+| `electron/main/binaries.test.ts` | `platform` explicito no caso empacotado; expectativa via `join` |
 | `electron/main/reset.test.ts` | casos POSIX marcados como POSIX-only, apontando a TASK-1640 |
 | `.github/workflows/build.yml` | `npm test` nos jobs Windows e macOS (arm64) |
 

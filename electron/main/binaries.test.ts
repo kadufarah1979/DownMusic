@@ -1,10 +1,15 @@
 import { describe, it, expect } from 'vitest'
+import { join } from 'node:path'
 import { binPath, checkBinaries } from './binaries'
 
 describe('binPath', () => {
   it('empacotado: usa o binario embarcado em resources/bin', () => {
-    expect(binPath('yt-dlp', { isPackaged: true, resourcesPath: '/app/resources' })).toBe('/app/resources/bin/yt-dlp')
-    expect(binPath('ffmpeg', { isPackaged: true, resourcesPath: '/app/resources' })).toBe('/app/resources/bin/ffmpeg')
+    // `platform` explicito: sem ele a funcao usa o do processo e acrescenta
+    // .exe no Windows. O separador vem do `join` do host — o mesmo que a
+    // producao usa —, entao a expectativa e montada com ele, nao com literal.
+    const packaged = { isPackaged: true, resourcesPath: '/app/resources', platform: 'linux' as const }
+    expect(binPath('yt-dlp', packaged)).toBe(join('/app/resources', 'bin', 'yt-dlp'))
+    expect(binPath('ffmpeg', packaged)).toBe(join('/app/resources', 'bin', 'ffmpeg'))
   })
 
   it('dev: usa o binario do PATH (so o nome)', () => {

@@ -29,8 +29,9 @@ describe('LibraryScanner.scan', () => {
     const scanner = new LibraryScanner(fakeReader)
     const { tracks, unreadable } = await scanner.scan(dir)
 
-    const names = tracks.map((t) => t.path.replace(dir, '')).sort()
-    expect(names).toEqual(['/a.mp3', '/sub/b.flac'])
+    // compara caminho com caminho: `replace(dir,'')` deixava o separador do
+    // sistema na string e a assercao literal com "/" quebrava no Windows
+    expect(tracks.map((t) => t.path).sort()).toEqual([join(dir, 'a.mp3'), join(dir, 'sub', 'b.flac')].sort())
     expect(unreadable).toEqual([join(dir, 'corrupt.mp3')])
   })
 })
