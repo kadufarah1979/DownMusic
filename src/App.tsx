@@ -112,6 +112,20 @@ export function App() {
     setResolved((prev) => prev.map((t) => (t === original ? replacement : t)))
   }
 
+  // mesma troca, nos resultados de busca. O grupo que não contém a faixa é
+  // devolvido como está (mesma referência): assim a lista dos outros motores
+  // não é remontada e a seleção/candidatas deles ficam intactas.
+  function replaceInSearchGroups(original: TrackMeta, replacement: TrackMeta) {
+    setSearchGroups(
+      (prev) =>
+        prev?.map((g) =>
+          g.tracks.includes(original)
+            ? { ...g, tracks: g.tracks.map((t) => (t === original ? replacement : t)) }
+            : g
+        ) ?? prev
+    )
+  }
+
   // resolve uma URL vinda do clipboard ou de drag & drop e leva para a aba Download
   async function resolveExternal(url: string) {
     setTab('download')
@@ -223,7 +237,11 @@ export function App() {
                 {searchGroups.length === 0 || searchGroups.every((g) => g.tracks.length === 0) ? (
                   <p className="text-sm text-neutral-500">Nenhum resultado para a busca.</p>
                 ) : (
-                  <SearchResults groups={searchGroups} outputDir={downloadDir || undefined} />
+                  <SearchResults
+                    groups={searchGroups}
+                    outputDir={downloadDir || undefined}
+                    onReplace={replaceInSearchGroups}
+                  />
                 )}
               </div>
             )}
