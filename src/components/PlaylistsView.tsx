@@ -89,7 +89,12 @@ export function PlaylistsView() {
     setMsg(null)
     try {
       const r = await api.syncAllPlaylists()
-      setMsg(`${r.added} nova(s) baixando no total.`)
+      // a contagem de falhas nao pode ficar so no log: "0 novas" sem aviso
+      // esconderia que uma playlist morta nem chegou a ser consultada
+      setMsg(
+        `${r.added} nova(s) baixando no total.` +
+          (r.failed ? ` ${r.failed} playlist(s) falharam ao sincronizar.` : '')
+      )
       reload()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
