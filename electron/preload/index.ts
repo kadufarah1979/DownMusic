@@ -23,6 +23,7 @@ const CH = {
   historyClear: 'history:clear',
   queueRetry: 'queue:retry',
   queueRetryFailed: 'queue:retryFailed',
+  queueResume: 'queue:resume',
   playlistList: 'playlist:list',
   playlistAdd: 'playlist:add',
   playlistRemove: 'playlist:remove',
@@ -51,6 +52,7 @@ const api = {
   queueList: (): Promise<QueueItem[]> => ipcRenderer.invoke(CH.queueList),
   retry: (itemId: string): Promise<void> => ipcRenderer.invoke(CH.queueRetry, itemId),
   retryFailed: (): Promise<void> => ipcRenderer.invoke(CH.queueRetryFailed),
+  resumeQueue: (): Promise<void> => ipcRenderer.invoke(CH.queueResume),
   getConfig: (): Promise<AppConfig> => ipcRenderer.invoke(CH.configGet),
   updateConfig: (patch: Partial<AppConfig>): Promise<AppConfig> =>
     ipcRenderer.invoke(CH.configUpdate, patch),

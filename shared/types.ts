@@ -68,6 +68,11 @@ export interface QueueItem {
   progress: number
   error?: string
   outputPath?: string
+  /**
+   * Restaurado do disco e parado: o app nao comeca a baixar sozinho no launch.
+   * Sai da marca quando o usuario aciona "Retomar".
+   */
+  stalled?: boolean
 }
 
 /** Configuracao persistida (electron-store). */

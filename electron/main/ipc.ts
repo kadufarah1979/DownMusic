@@ -30,6 +30,7 @@ export const CH = {
   historyClear: 'history:clear',
   queueRetry: 'queue:retry',
   queueRetryFailed: 'queue:retryFailed',
+  queueResume: 'queue:resume',
   playlistList: 'playlist:list',
   playlistAdd: 'playlist:add',
   playlistRemove: 'playlist:remove',
@@ -88,6 +89,7 @@ export function registerIpc(
   ipcMain.handle(CH.queueList, () => queue.list())
   ipcMain.handle(CH.queueRetry, (_e, itemId: string) => queue.retry(itemId))
   ipcMain.handle(CH.queueRetryFailed, () => queue.retryFailed())
+  ipcMain.handle(CH.queueResume, () => queue.resume())
   ipcMain.handle(CH.configGet, () => config.get())
   ipcMain.handle(CH.configUpdate, (_e, patch) => {
     const cfg = config.update(patch)

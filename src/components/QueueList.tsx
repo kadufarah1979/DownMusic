@@ -98,6 +98,9 @@ export function QueueList({
 
   const list = Object.values(items)
   const errorCount = list.filter((i) => i.state === 'error').length
+  // itens restaurados do disco: ficam parados de proposito, o app nao volta
+  // baixando sozinho ao abrir.
+  const stalledCount = list.filter((i) => i.stalled).length
   const prog = queueProgress(list)
   const visible = onlyErrors ? list.filter((i) => i.state === 'error') : list
 
@@ -119,6 +122,7 @@ export function QueueList({
               {prog.finished ? 'Concluído' : 'Baixando'} {prog.done}/{prog.total}
             </span>
             {errorCount > 0 && <span className="text-red-400">· {errorCount} com erro</span>}
+            {stalledCount > 0 && <span className="text-amber-400">· {stalledCount} parado(s)</span>}
             {errorCount > 0 && (
               <label className="flex cursor-pointer items-center gap-1.5">
                 <input type="checkbox" checked={onlyErrors} onChange={() => setOnlyErrors((v) => !v)} />
@@ -126,14 +130,25 @@ export function QueueList({
               </label>
             )}
           </div>
-          {errorCount > 0 && (
-            <button
-              onClick={() => api.retryFailed()}
-              className="rounded bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600"
-            >
-              ↻ Tentar novamente ({errorCount})
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {stalledCount > 0 && (
+              <button
+                onClick={() => api.resumeQueue()}
+                title="Retomar os downloads que ficaram da sessão anterior"
+                className="rounded bg-emerald-600 px-3 py-1 text-xs hover:bg-emerald-500"
+              >
+                ▶ Retomar ({stalledCount})
+              </button>
+            )}
+            {errorCount > 0 && (
+              <button
+                onClick={() => api.retryFailed()}
+                className="rounded bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600"
+              >
+                ↻ Tentar novamente ({errorCount})
+              </button>
+            )}
+          </div>
         </div>
         {/* barra de progresso geral */}
         <div className="mt-2 h-1.5 w-full rounded bg-neutral-700">
@@ -185,5 +200,6 @@ function StateBadge({ item }: { item: QueueItem }) {
     error: 'text-red-400',
     canceled: 'text-neutral-500'
   }
+  if (item.stalled) return <span className="text-xs text-amber-400">parado</span>
   return <span className={`text-xs ${map[item.state]}`}>{item.state}</span>
 }

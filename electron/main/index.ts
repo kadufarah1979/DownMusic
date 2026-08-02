@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { ConfigStore } from './config'
 import { Resolver } from './resolver'
 import { QueueManager } from './queue'
+import { QueueStore } from './queueStore'
 import { Tagger } from './tagger'
 import { registerIpc } from './ipc'
 import { HistoryStore } from './history'
@@ -55,7 +56,7 @@ function buildCore() {
   // enriquece cada faixa com metadados do Deezer (genero/ano/label/nº faixa/capa)
   // para tags ID3 ricas e organizacao por genero (Rekordbox).
   const enricher = new MetadataEnricher()
-  const queue = new QueueManager(resolver, tagger, cfg, enricher.enrich)
+  const queue = new QueueManager(resolver, tagger, cfg, enricher.enrich, new QueueStore())
   const history = new HistoryStore()
 
   // registra no historico quando um download conclui
