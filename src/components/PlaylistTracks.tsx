@@ -1,5 +1,7 @@
 import { api } from '../ipc'
 import { trackStatus, type TrackStatus } from '@shared/trackStatus'
+import { ExtendedButton, ExtendedCandidates } from './ExtendedCandidates'
+import { keyOf, useExtendedSearch } from '../lib/useExtendedSearch'
 import type { QueueItemState, TrackMeta } from '@shared/types'
 
 const BADGE: Record<TrackStatus, { label: string; cls: string }> = {
@@ -20,12 +22,22 @@ const ACTION: Partial<Record<TrackStatus, string>> = {
 export function PlaylistTracks({
   tracks,
   isDownloaded,
-  queueStateOf
+  queueStateOf,
+  onReplace
 }: {
   tracks: TrackMeta[]
   isDownloaded: (t: TrackMeta) => boolean
   queueStateOf: (t: TrackMeta) => QueueItemState | undefined
+  /** Habilita a busca de versao extended por faixa (e a troca na playlist). */
+  onReplace?: (original: TrackMeta, replacement: TrackMeta) => void
 }) {
+  const ext = useExtendedSearch()
+
+  function swap(original: TrackMeta, replacement: TrackMeta) {
+    ext.dropFor(original)
+    onReplace?.(original, replacement)
+  }
+
   return (
     <ul className="space-y-1.5">
       {tracks.map((t) => {
@@ -33,20 +45,34 @@ export function PlaylistTracks({
         const badge = BADGE[status]
         const action = ACTION[status]
         return (
-          <li key={`${t.sourceId}:${t.id}`} className="flex items-center gap-3 rounded bg-neutral-900 px-3 py-2">
-            <span className="flex-1 truncate text-sm">
-              {t.artists.join(', ')}
-              {t.artists.length ? ' — ' : ''}
-              {t.title}
-            </span>
-            <span className={`whitespace-nowrap rounded px-2 py-0.5 text-xs ${badge.cls}`}>{badge.label}</span>
-            {action && (
-              <button
-                onClick={() => api.enqueue([t])}
-                className="whitespace-nowrap rounded bg-neutral-700 px-2 py-0.5 text-xs hover:bg-neutral-600"
-              >
-                {action}
-              </button>
+          <li key={keyOf(t)} className="rounded bg-neutral-900 px-3 py-2">
+            <div className="flex items-center gap-3">
+              <span className="flex-1 truncate text-sm">
+                {t.artists.join(', ')}
+                {t.artists.length ? ' — ' : ''}
+                {t.title}
+              </span>
+              <span className={`whitespace-nowrap rounded px-2 py-0.5 text-xs ${badge.cls}`}>{badge.label}</span>
+              {onReplace && (
+                <ExtendedButton pending={ext.status[keyOf(t)] === 'pending'} onClick={() => ext.find(t)} />
+              )}
+              {action && (
+                <button
+                  onClick={() => api.enqueue([t])}
+                  className="whitespace-nowrap rounded bg-neutral-700 px-2 py-0.5 text-xs hover:bg-neutral-600"
+                >
+                  {action}
+                </button>
+              )}
+            </div>
+
+            {onReplace && (
+              <ExtendedCandidates
+                track={t}
+                status={ext.status[keyOf(t)]}
+                candidates={ext.candidates[keyOf(t)]}
+                onSwap={swap}
+              />
             )}
           </li>
         )

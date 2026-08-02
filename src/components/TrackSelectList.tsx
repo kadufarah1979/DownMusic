@@ -1,29 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../ipc'
 import { trackMatchesQuery } from '@shared/trackFilter'
-import { isDurationVerified } from '@shared/extended'
-import {
-  isDifferentList,
-  pruneCandidates,
-  pruneSelection,
-  remapKey
-} from '@shared/trackListState'
-import type { TrackMeta, SourceId } from '@shared/types'
-
-const keyOf = (t: TrackMeta) => `${t.sourceId}:${t.id}`
-
-const SRC_LABEL: Record<SourceId, string> = {
-  spotify: 'Spotify', deezer: 'Deezer', youtube: 'YouTube',
-  soundcloud: 'SoundCloud', bandcamp: 'Bandcamp', generic: 'Outros'
-}
-
-/** Formata segundos como m:ss. */
-function fmtDur(sec?: number): string {
-  if (!sec) return ''
-  const m = Math.floor(sec / 60)
-  const s = Math.round(sec % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
-}
+import { isDifferentList, pruneSelection, remapKey } from '@shared/trackListState'
+import { ExtendedButton, ExtendedCandidates } from './ExtendedCandidates'
+import { keyOf, useExtendedSearch } from '../lib/useExtendedSearch'
+import type { TrackMeta } from '@shared/types'
 
 /**
  * Lista de faixas com checkbox por item (todas marcadas por padrao),
@@ -50,9 +31,7 @@ export function TrackSelectList({
   const [query, setQuery] = useState('')
   const [extBusy, setExtBusy] = useState(false)
   const [extProgress, setExtProgress] = useState<{ done: number; total: number } | null>(null)
-  const [candidates, setCandidates] = useState<Record<string, Partial<Record<SourceId, TrackMeta>>>>({})
-  /** Resultado da busca por faixa: em andamento, sem candidata, ou falha. */
-  const [extPerTrack, setExtPerTrack] = useState<Record<string, 'pending' | 'empty' | 'error'>>({})
+  const ext = useExtendedSearch()
   const prevKeys = useRef<string[]>([])
 
   // O array de `tracks` tambem muda de identidade quando UMA faixa e trocada
@@ -63,36 +42,13 @@ export function TrackSelectList({
     if (isDifferentList(prevKeys.current, keys)) {
       setSelected(new Set(keys))
       setQuery('')
-      setCandidates({})
-      setExtPerTrack({})
+      ext.reset()
     } else {
       setSelected((prev) => pruneSelection(prev, keys))
-      setCandidates((prev) => pruneCandidates(prev, keys))
-      setExtPerTrack((prev) => pruneCandidates(prev, keys))
+      ext.prune(keys)
     }
     prevKeys.current = keys
   }, [tracks])
-
-  /** Busca a extended de UMA faixa e mescla o resultado, sem tocar nas demais. */
-  async function findExtendedOne(t: TrackMeta) {
-    const k = keyOf(t)
-    setExtPerTrack((p) => ({ ...p, [k]: 'pending' }))
-    try {
-      const found = await api.findExtended(t)
-      if (found && Object.keys(found).length > 0) {
-        setCandidates((prev) => ({ ...prev, [k]: found }))
-        setExtPerTrack((p) => {
-          const n = { ...p }
-          delete n[k]
-          return n
-        })
-      } else {
-        setExtPerTrack((p) => ({ ...p, [k]: 'empty' }))
-      }
-    } catch {
-      setExtPerTrack((p) => ({ ...p, [k]: 'error' }))
-    }
-  }
 
   // busca a versão extended de cada faixa nos motores configurados (concorrência limitada)
   async function findExtendedAll() {
@@ -104,7 +60,7 @@ export function TrackSelectList({
     async function worker() {
       while (next < list.length) {
         // mescla (nao zera): o que ja foi achado por busca individual permanece
-        await findExtendedOne(list[next++])
+        await ext.find(list[next++])
         setExtProgress({ done: ++done, total: list.length })
       }
     }
@@ -118,11 +74,7 @@ export function TrackSelectList({
     const to = keyOf(replacement)
     // a faixa nova herda o "marcado" da original, em vez de voltar ao default
     setSelected((prev) => remapKey(prev, from, to))
-    setCandidates((prev) => {
-      const n = { ...prev }
-      delete n[from]
-      return n
-    })
+    ext.dropFor(original)
     onReplace?.(original, replacement)
   }
 
@@ -234,14 +186,11 @@ export function TrackSelectList({
                   </span>
                 )}
                 {onReplace && (
-                  <button
-                    onClick={() => findExtendedOne(t)}
-                    disabled={extPerTrack[keyOf(t)] === 'pending' || extBusy}
-                    title="Procurar a versão extended desta faixa"
-                    className="rounded px-2 py-1 text-sm text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100 disabled:opacity-30"
-                  >
-                    {extPerTrack[keyOf(t)] === 'pending' ? '…' : '⏱'}
-                  </button>
+                  <ExtendedButton
+                    pending={ext.status[keyOf(t)] === 'pending'}
+                    disabled={extBusy}
+                    onClick={() => ext.find(t)}
+                  />
                 )}
                 <button
                   onClick={() => t.sourceUrl && api.openExternal(t.sourceUrl)}
@@ -253,56 +202,13 @@ export function TrackSelectList({
                 </button>
               </div>
 
-              {extPerTrack[keyOf(t)] === 'empty' && (
-                <p className="mt-2 pl-8 text-xs text-neutral-500">
-                  Nenhuma versão extended encontrada — versões pouco mais longas que a original
-                  ou desproporcionalmente longas (DJ sets, megamixes) são descartadas.
-                </p>
-              )}
-              {extPerTrack[keyOf(t)] === 'error' && (
-                <p className="mt-2 pl-8 text-xs text-red-400">
-                  Falha ao buscar a versão extended desta faixa.
-                </p>
-              )}
-
-              {onReplace && candidates[keyOf(t)] && (
-                <div className="mt-2 space-y-1 border-l-2 border-emerald-800/70 pl-3">
-                  <p className="text-xs text-neutral-500">Versões extended encontradas — escolha para trocar:</p>
-                  {(Object.entries(candidates[keyOf(t)]) as [SourceId, TrackMeta][]).map(([src, cand]) => (
-                    <div key={src} className="flex items-center gap-2 text-xs">
-                      <span className="shrink-0 rounded bg-neutral-700 px-1.5 py-0.5 text-neutral-300">{SRC_LABEL[src]}</span>
-                      <span className="min-w-0 flex-1 truncate text-neutral-300">
-                        {cand.title}{cand.durationSec ? ` · ${fmtDur(cand.durationSec)}` : ''}
-                      </span>
-                      {!isDurationVerified({ originalTitle: t.title, originalDurationSec: t.durationSec }, cand) && (
-                        <span
-                          title={
-                            t.durationSec
-                              ? 'Esta versão não informa a duração — só o nome foi conferido.'
-                              : 'A faixa original não informa a duração — só o nome foi conferido.'
-                          }
-                          className="shrink-0 rounded bg-amber-900/60 px-1.5 py-0.5 text-amber-300"
-                        >
-                          ⚠ tempo não conferido
-                        </span>
-                      )}
-                      <button
-                        onClick={() => cand.sourceUrl && api.openExternal(cand.sourceUrl)}
-                        disabled={!cand.sourceUrl}
-                        title="Ouvir esta versão"
-                        className="shrink-0 rounded px-1.5 py-0.5 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100 disabled:opacity-30"
-                      >
-                        ↗
-                      </button>
-                      <button
-                        onClick={() => swap(t, cand)}
-                        className="shrink-0 rounded bg-emerald-600 px-2 py-0.5 hover:bg-emerald-500"
-                      >
-                        Trocar
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              {onReplace && (
+                <ExtendedCandidates
+                  track={t}
+                  status={ext.status[keyOf(t)]}
+                  candidates={ext.candidates[keyOf(t)]}
+                  onSwap={swap}
+                />
               )}
             </li>
           ))}
