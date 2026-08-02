@@ -16,7 +16,9 @@ export class HistoryStore {
   constructor() { this.store = new Store({ name: 'history', defaults: { entries: [] } }) }
 ```
 
-`ConfigStore` e `PlaylistStore` fazem igual. Um teste que instancie qualquer uma delas hoje escreve **no `~/.config/downmusic` real** — exatamente o histórico e as playlists do usuário. Não é hipótese: é o comportamento do `electron-store` quando não recebe `cwd`.
+`ConfigStore` e `PlaylistStore` fazem igual. Um teste que instancie qualquer uma delas hoje grava em disco, na casa do usuário. **Medido, não suposto:** fora do Electron o `electron-store` cai em `~/.config/electron-store-nodejs/<name>.json`.
+
+Ou seja, o dado real do app (`~/.config/downmusic/history.json`) **não** é corrompido — a correção do rumo aqui é essa, e vale registrar porque a primeira versão desta spec afirmava o contrário. O que acontece é pior de outro jeito para um teste: ele escreve fora de qualquer sandbox, num diretório do usuário que ninguém limpa, e o estado **sobrevive entre execuções** — dois `npm test` seguidos veem históricos diferentes, e a ordem dos testes passa a importar.
 
 `ConfigStore` ainda chama `app.getPath('music')` (`config.ts:28`). Fora do Electron isso não existe; só não explode porque há um `try/catch` que devolve `''`. Ou seja, hoje o default de `outputDir` num teste seria string vazia — um detalhe que passaria despercebido e viraria expectativa errada.
 
