@@ -1,6 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../ipc'
 import { trackMatchesQuery } from '@shared/trackFilter'
+import {
+  isDifferentList,
+  pruneCandidates,
+  pruneSelection,
+  remapKey
+} from '@shared/trackListState'
 import type { TrackMeta, SourceId } from '@shared/types'
 
 const keyOf = (t: TrackMeta) => `${t.sourceId}:${t.id}`
@@ -44,33 +50,60 @@ export function TrackSelectList({
   const [extBusy, setExtBusy] = useState(false)
   const [extProgress, setExtProgress] = useState<{ done: number; total: number } | null>(null)
   const [candidates, setCandidates] = useState<Record<string, Partial<Record<SourceId, TrackMeta>>>>({})
+  /** Resultado da busca por faixa: em andamento, sem candidata, ou falha. */
+  const [extPerTrack, setExtPerTrack] = useState<Record<string, 'pending' | 'empty' | 'error'>>({})
+  const prevKeys = useRef<string[]>([])
 
-  // reseta selecao (tudo marcado), limpa o filtro e as candidatas quando o conjunto muda
+  // O array de `tracks` tambem muda de identidade quando UMA faixa e trocada
+  // pela versao extended. Nesse caso o estado das demais tem que sobreviver —
+  // so uma lista de verdade nova (nenhuma faixa em comum) justifica zerar tudo.
   useEffect(() => {
-    setSelected(new Set(tracks.map(keyOf)))
-    setQuery('')
-    setCandidates({})
+    const keys = tracks.map(keyOf)
+    if (isDifferentList(prevKeys.current, keys)) {
+      setSelected(new Set(keys))
+      setQuery('')
+      setCandidates({})
+      setExtPerTrack({})
+    } else {
+      setSelected((prev) => pruneSelection(prev, keys))
+      setCandidates((prev) => pruneCandidates(prev, keys))
+      setExtPerTrack((prev) => pruneCandidates(prev, keys))
+    }
+    prevKeys.current = keys
   }, [tracks])
+
+  /** Busca a extended de UMA faixa e mescla o resultado, sem tocar nas demais. */
+  async function findExtendedOne(t: TrackMeta) {
+    const k = keyOf(t)
+    setExtPerTrack((p) => ({ ...p, [k]: 'pending' }))
+    try {
+      const found = await api.findExtended(t)
+      if (found && Object.keys(found).length > 0) {
+        setCandidates((prev) => ({ ...prev, [k]: found }))
+        setExtPerTrack((p) => {
+          const n = { ...p }
+          delete n[k]
+          return n
+        })
+      } else {
+        setExtPerTrack((p) => ({ ...p, [k]: 'empty' }))
+      }
+    } catch {
+      setExtPerTrack((p) => ({ ...p, [k]: 'error' }))
+    }
+  }
 
   // busca a versão extended de cada faixa nos motores configurados (concorrência limitada)
   async function findExtendedAll() {
     setExtBusy(true)
-    setCandidates({})
     const list = tracks
     setExtProgress({ done: 0, total: list.length })
     let done = 0
     let next = 0
     async function worker() {
       while (next < list.length) {
-        const t = list[next++]
-        try {
-          const found = await api.findExtended(t)
-          if (found && Object.keys(found).length > 0) {
-            setCandidates((prev) => ({ ...prev, [keyOf(t)]: found }))
-          }
-        } catch {
-          /* falha por faixa é ignorada (mantém original) */
-        }
+        // mescla (nao zera): o que ja foi achado por busca individual permanece
+        await findExtendedOne(list[next++])
         setExtProgress({ done: ++done, total: list.length })
       }
     }
@@ -80,12 +113,16 @@ export function TrackSelectList({
   }
 
   function swap(original: TrackMeta, replacement: TrackMeta) {
-    onReplace?.(original, replacement)
+    const from = keyOf(original)
+    const to = keyOf(replacement)
+    // a faixa nova herda o "marcado" da original, em vez de voltar ao default
+    setSelected((prev) => remapKey(prev, from, to))
     setCandidates((prev) => {
       const n = { ...prev }
-      delete n[keyOf(original)]
+      delete n[from]
       return n
     })
+    onReplace?.(original, replacement)
   }
 
   const visible = useMemo(() => tracks.filter((t) => trackMatchesQuery(t, query)), [tracks, query])
@@ -195,6 +232,16 @@ export function TrackSelectList({
                     ✓ Baixado
                   </span>
                 )}
+                {onReplace && (
+                  <button
+                    onClick={() => findExtendedOne(t)}
+                    disabled={extPerTrack[keyOf(t)] === 'pending' || extBusy}
+                    title="Procurar a versão extended desta faixa"
+                    className="rounded px-2 py-1 text-sm text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100 disabled:opacity-30"
+                  >
+                    {extPerTrack[keyOf(t)] === 'pending' ? '…' : '⏱'}
+                  </button>
+                )}
                 <button
                   onClick={() => t.sourceUrl && api.openExternal(t.sourceUrl)}
                   disabled={!t.sourceUrl}
@@ -204,6 +251,18 @@ export function TrackSelectList({
                   ↗
                 </button>
               </div>
+
+              {extPerTrack[keyOf(t)] === 'empty' && (
+                <p className="mt-2 pl-8 text-xs text-neutral-500">
+                  Nenhuma versão extended encontrada
+                  {!t.durationSec && ' — esta faixa não traz duração, e a comparação depende dela'}.
+                </p>
+              )}
+              {extPerTrack[keyOf(t)] === 'error' && (
+                <p className="mt-2 pl-8 text-xs text-red-400">
+                  Falha ao buscar a versão extended desta faixa.
+                </p>
+              )}
 
               {onReplace && candidates[keyOf(t)] && (
                 <div className="mt-2 space-y-1 border-l-2 border-emerald-800/70 pl-3">
