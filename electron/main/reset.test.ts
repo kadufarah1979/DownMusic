@@ -20,9 +20,13 @@ describe('isSafeToClear (POSIX)', () => {
     expect(isSafeToClear('/home/user/Musica/Downloads', HOME, posix)).toBe(true)
     expect(isSafeToClear('/mnt/hd/musicas', HOME, posix)).toBe(true)
   })
-  it('bloqueia tambem o que esta dentro de uma arvore de sistema', () => {
+  it('bloqueia tambem o que esta dentro de uma arvore de sistema estatica', () => {
     expect(isSafeToClear('/usr/share/musicas', HOME, posix)).toBe(false)
-    expect(isSafeToClear('/var/tmp/musicas', HOME, posix)).toBe(false)
+    expect(isSafeToClear('/etc/skel/musicas', HOME, posix)).toBe(false)
+  })
+  it('/var e bloqueado so exatamente: o temporario do macOS fica embaixo dele', () => {
+    expect(isSafeToClear('/var', HOME, posix)).toBe(false)
+    expect(isSafeToClear('/var/folders/g3/xxx/T/org-abc', HOME, posix)).toBe(true)
   })
   it('barra sobrando no fim nao muda o veredito', () => {
     expect(isSafeToClear('/home/user/', HOME, posix)).toBe(false)
