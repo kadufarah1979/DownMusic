@@ -112,7 +112,7 @@ Testes de `findFfmpeg`: acha no PATH; prefere `FFMPEG_BIN`; `.exe` no `win32`; P
 
 - Windows: `- run: npm test` depois do download dos binários e antes do `dist:win`.
 - macOS: idem, com `if: matrix.arch == 'arm64'`.
-- `npm run typecheck` e `npm run lint` também passam a rodar nos dois — hoje só o Linux verifica, e é mais barato que empacotar.
+- ~~`npm run typecheck` e `npm run lint` também passam a rodar nos dois.~~ **Revisto na implementação:** os dois são independentes de plataforma (mesmo `tsconfig`, mesmo `eslint.config.js`, nenhuma regra consulta `process.platform`). Rodá-los três vezes gastaria minuto de runner para produzir o mesmo veredito — e o próprio card pede para não duplicar tempo sem justificativa. Só `npm test` roda nos três.
 - O comentário obsoleto sobre "caminhos POSIX" sai.
 
 ## Testes
