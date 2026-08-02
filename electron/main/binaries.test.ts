@@ -13,8 +13,9 @@ describe('binPath', () => {
   })
 
   it('dev: usa o binario do PATH (so o nome)', () => {
-    expect(binPath('yt-dlp', { isPackaged: false, resourcesPath: '' })).toBe('yt-dlp')
-    expect(binPath('ffmpeg', { isPackaged: false, resourcesPath: '' })).toBe('ffmpeg')
+    const dev = { isPackaged: false, resourcesPath: '', platform: 'linux' as const }
+    expect(binPath('yt-dlp', dev)).toBe('yt-dlp')
+    expect(binPath('ffmpeg', dev)).toBe('ffmpeg')
   })
 
   it('Windows: acrescenta .exe ao nome do binario', () => {
