@@ -29,6 +29,20 @@ export function PlaylistsView() {
   const isDownloaded = useDownloadedChecker()
   const queueStateOf = useQueueStatus()
 
+  /**
+   * Troca uma faixa pela versao extended dentro da playlist certa. So a URL
+   * afetada recebe array novo — as outras playlists expandidas continuam com a
+   * mesma referencia e nao remontam.
+   */
+  function replaceInPlaylist(url: string) {
+    return (original: TrackMeta, replacement: TrackMeta) =>
+      setTracks((prev) => {
+        const st = prev[url]
+        if (!Array.isArray(st)) return prev
+        return { ...prev, [url]: st.map((t) => (t === original ? replacement : t)) }
+      })
+  }
+
   const reload = () => api.getPlaylists().then(setSubs)
   useEffect(() => {
     reload()
@@ -189,7 +203,12 @@ export function PlaylistsView() {
                               ⚠ O Spotify limitou esta playlist às 100 primeiras faixas.
                             </p>
                           )}
-                          <PlaylistTracks tracks={st} isDownloaded={isDownloaded} queueStateOf={queueStateOf} />
+                          <PlaylistTracks
+                            tracks={st}
+                            isDownloaded={isDownloaded}
+                            queueStateOf={queueStateOf}
+                            onReplace={replaceInPlaylist(s.url)}
+                          />
                         </>
                       )}
                     </div>

@@ -100,7 +100,16 @@ Escopo: `PlaylistTracks.tsx`, `PlaylistsView.tsx`.
 1. **Duplicar o bloco** (botão + lista de candidatas + trocar) dentro do `PlaylistTracks`. Mantém os componentes independentes; custa alguma repetição de JSX.
 2. **Extrair um componente compartilhado** (`ExtendedCandidates`) consumido pelas duas telas. Menos repetição, mas mexe no `TrackSelectList` já estável.
 
-Decidir **depois** da Fase 1, quando a UI de candidatas estiver na forma final: a opção 2 só se paga se ela ficar mesmo idêntica nas duas telas. A troca precisa subir até a `PlaylistsView`, que guarda as faixas em `tracks: Record<url, TracksState>` — atualizar a URL certa, sem afetar outras playlists expandidas.
+**Decidido na implementação (TASK-1632): opção 2, com um limite.** Depois das TASK-1630 e TASK-1633 a UI de candidatas ficou com conteúdo que ninguém replicaria de cabeça na segunda tela — o selo "⚠ tempo não conferido", com dois textos de `title` conforme qual das durações falta. Duplicar isso garantiria duas telas divergindo.
+
+O que foi extraído são duas coisas, não uma:
+
+- `src/lib/useExtendedSearch.ts` — a máquina de estado (`pending` → candidatas | `empty` | `error`, mais `prune`/`reset`/`dropFor`). É o pedaço que apodrece se existir em duas cópias.
+- `src/components/ExtendedCandidates.tsx` — o bloco visual e o botão ⏱.
+
+O limite: **a reconciliação continua em cada componente**. O `TrackSelectList` reconcilia seleção *e* candidatas contra o mesmo `useEffect([tracks])`; o `PlaylistTracks` não tem seleção. Puxar isso para o hook obrigaria a inventar uma API para os dois casos. As funções puras (`pruneCandidates`, `remapKey`) já são compartilhadas via `shared/trackListState.ts`, que tem teste.
+
+O risco reconhecido: o projeto não tem teste de componente, então mexer no `TrackSelectList` não tem rede. A mitigação foi manter o diff mecânico — o JSX saiu inteiro para o componente novo, sem reescrita — e conferir `typecheck`, `lint`, `build` e a suíte. A troca precisa subir até a `PlaylistsView`, que guarda as faixas em `tracks: Record<url, TracksState>` — atualizar a URL certa, sem afetar outras playlists expandidas.
 
 ## Testes
 
