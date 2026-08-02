@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../ipc'
 import { trackMatchesQuery } from '@shared/trackFilter'
+import { isDurationVerified } from '@shared/extended'
 import {
   isDifferentList,
   pruneCandidates,
@@ -254,8 +255,8 @@ export function TrackSelectList({
 
               {extPerTrack[keyOf(t)] === 'empty' && (
                 <p className="mt-2 pl-8 text-xs text-neutral-500">
-                  Nenhuma versão extended encontrada
-                  {!t.durationSec && ' — esta faixa não traz duração, e a comparação depende dela'}.
+                  Nenhuma versão extended encontrada — versões pouco mais longas que a original
+                  ou desproporcionalmente longas (DJ sets, megamixes) são descartadas.
                 </p>
               )}
               {extPerTrack[keyOf(t)] === 'error' && (
@@ -273,6 +274,18 @@ export function TrackSelectList({
                       <span className="min-w-0 flex-1 truncate text-neutral-300">
                         {cand.title}{cand.durationSec ? ` · ${fmtDur(cand.durationSec)}` : ''}
                       </span>
+                      {!isDurationVerified({ originalTitle: t.title, originalDurationSec: t.durationSec }, cand) && (
+                        <span
+                          title={
+                            t.durationSec
+                              ? 'Esta versão não informa a duração — só o nome foi conferido.'
+                              : 'A faixa original não informa a duração — só o nome foi conferido.'
+                          }
+                          className="shrink-0 rounded bg-amber-900/60 px-1.5 py-0.5 text-amber-300"
+                        >
+                          ⚠ tempo não conferido
+                        </span>
+                      )}
                       <button
                         onClick={() => cand.sourceUrl && api.openExternal(cand.sourceUrl)}
                         disabled={!cand.sourceUrl}

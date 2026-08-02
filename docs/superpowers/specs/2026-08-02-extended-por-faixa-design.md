@@ -7,7 +7,7 @@
 
 ## Estado atual
 
-O backend já é por faixa. `findExtended(resolver, track)` (`electron/main/extendedFinder.ts`) monta a query `"<artistas> <título> extended mix"`, chama `resolver.searchMany` nos quatro motores (`spotify`, `deezer`, `youtube`, `soundcloud`) e passa por `pickBestPerSource`, que descarta candidatas sem palavra-chave de extended e com título que não bate. O teste de duração só se aplica **quando as duas durações são conhecidas** — ver a Correção em Bordas. Retorna `Partial<Record<SourceId, TrackMeta>>` — no máximo uma candidata por fonte, só as qualificadas.
+O backend já é por faixa. `findExtended(resolver, track)` (`electron/main/extendedFinder.ts`) monta a query `"<artistas> <título> extended mix"`, chama `resolver.searchMany` nos quatro motores (`spotify`, `deezer`, `youtube`, `soundcloud`) e passa por `pickBestPerSource`, que descarta candidatas sem palavra-chave de extended e com título que não bate. O teste de duração (piso, teto e bônus com pico) só se aplica **quando as duas durações são conhecidas** — ver a Correção em Bordas. Retorna `Partial<Record<SourceId, TrackMeta>>` — no máximo uma candidata por fonte, só as qualificadas.
 
 O que existe na UI é apenas o consumo **em lote**: o botão "⏱ Buscar versões extended" no cabeçalho do `TrackSelectList` roda `findExtendedAll()`, que percorre a lista inteira com três workers concorrentes.
 
@@ -121,7 +121,8 @@ Validação ao vivo mínima, por fase:
 
 ## Bordas
 
-- **Correção (2026-08-02):** a versão original desta spec afirmava que faixa sem `durationSec` não teria candidata qualificada. É o contrário. Em `scoreExtendedCandidate`, o teste de duração está sob `if (od && cd)`; sem duração original o fluxo cai no `else if (cd)`, ganha `+5` e **qualifica só pelo nome**. Ou seja, justamente nas faixas sem duração o filtro de tempo desaparece. Tratado na TASK-1633.
+- **Correção (2026-08-02):** a versão original desta spec afirmava que faixa sem `durationSec` não teria candidata qualificada. É o contrário. Em `scoreExtendedCandidate`, o teste de duração está sob `if (od && cd)`; sem duração original o fluxo cai no `else if (cd)`, ganha `+5` e **qualifica só pelo nome**. Ou seja, justamente nas faixas sem duração o filtro de tempo desaparece.
+- **Resolvido na TASK-1633.** O critério de duração passou a ter piso (`>= 1,2x` **ou** `+60s`, para cobrir faixa curta e faixa longa), teto (`> 3x` é descartada — DJ set, continuous mix, megamix) e bônus com pico em `~1,5x`, decrescendo depois, em vez de crescer sem limite. Sem uma das duas durações a candidata continua qualificando pelo nome — não há o que comparar —, mas `isDurationVerified` deixa isso explícito e a UI marca a candidata com **"⚠ tempo não conferido"** em vez de deixá-la parecer validada. A pontuação é arredondada: sem isso o ruído de ponto flutuante desempataria candidatas equidistantes do pico.
 - Buscar duas vezes na mesma faixa: a segunda substitui as candidatas daquela faixa, não acumula.
 - Trocar uma faixa já trocada: a chave muda de novo; a reconciliação precisa aguentar troca encadeada.
 - Faixa enfileirada e depois trocada: a fila já recebeu a original — a troca vale para a próxima vez que for enfileirada, não altera o item na fila.
