@@ -227,7 +227,10 @@ export function App() {
                 )}
               </div>
             )}
-            <QueueList compact={resolved.length > 0 || !!searchGroups} />
+            <QueueList
+              compact={resolved.length > 0 || !!searchGroups}
+              onGoToHistory={() => setTab('history')}
+            />
           </div>
         )}
         <KeepAlive active={tab === 'playlists'}>
