@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 import { LibraryScanner, MusicMetadataReader, type TagReader } from './libraryScanner'
+import { findFfmpeg, FFMPEG_HINT } from '../testSupport/ffmpegBin'
 import type { ScannedTrack } from '../../shared/library'
 
 // leitor falso: deriva tags triviais do nome do arquivo
@@ -34,14 +35,19 @@ describe('LibraryScanner.scan', () => {
   })
 })
 
+const FFMPEG = findFfmpeg()
+
 const genMp3 = (out: string) =>
   new Promise<void>((res, rej) => {
-    const p = spawn('resources/bin/ffmpeg', ['-y', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono', '-t', '1',
+    const p = spawn(FFMPEG!, ['-y', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono', '-t', '1',
       '-metadata', 'title=Teste', '-metadata', 'artist=Fulano', '-metadata', 'genre=House', out])
+    // sem este listener o ENOENT (ou binário de arquitetura errada) não rejeita
+    // a Promise: ela nunca assenta e o teste morre no timeout de 5s
+    p.on('error', rej)
     p.on('close', (c) => (c === 0 ? res() : rej(new Error('ffmpeg ' + c))))
   })
 
-describe('MusicMetadataReader (real)', () => {
+describe.skipIf(!FFMPEG)(`MusicMetadataReader (real) [${FFMPEG ? 'ffmpeg ok' : FFMPEG_HINT}]`, () => {
   it('lê título/artista/gênero e bitrate de um mp3 real', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'mm-'))
     const f = join(dir, 'x.mp3')
