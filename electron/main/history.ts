@@ -6,12 +6,22 @@ interface HistoryData {
   entries: HistoryEntry[]
 }
 
+/**
+ * A fatia do electron-store que esta classe usa. Existe para o teste injetar um
+ * duplo em memoria: instanciado de verdade fora do Electron, o electron-store
+ * grava em `~/.config/electron-store-nodejs/` e o estado vaza entre execucoes.
+ */
+export interface HistoryBackend {
+  get(key: 'entries'): HistoryEntry[]
+  set(key: 'entries', value: HistoryEntry[]): void
+}
+
 /** Persistencia do historico de downloads (arquivo history.json, separado da config). */
 export class HistoryStore {
-  private store: Store<HistoryData>
+  private store: HistoryBackend
 
-  constructor() {
-    this.store = new Store<HistoryData>({ name: 'history', defaults: { entries: [] } })
+  constructor(store: HistoryBackend = new Store<HistoryData>({ name: 'history', defaults: { entries: [] } })) {
+    this.store = store
   }
 
   list(): HistoryEntry[] {
