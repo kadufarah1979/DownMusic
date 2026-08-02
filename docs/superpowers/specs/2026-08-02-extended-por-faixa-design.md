@@ -7,7 +7,7 @@
 
 ## Estado atual
 
-O backend já é por faixa. `findExtended(resolver, track)` (`electron/main/extendedFinder.ts`) monta a query `"<artistas> <título> extended mix"`, chama `resolver.searchMany` nos quatro motores (`spotify`, `deezer`, `youtube`, `soundcloud`) e passa por `pickBestPerSource`, que descarta candidatas sem palavra-chave de extended, com título que não bate, ou sem duração maior que a original. Retorna `Partial<Record<SourceId, TrackMeta>>` — no máximo uma candidata por fonte, só as qualificadas.
+O backend já é por faixa. `findExtended(resolver, track)` (`electron/main/extendedFinder.ts`) monta a query `"<artistas> <título> extended mix"`, chama `resolver.searchMany` nos quatro motores (`spotify`, `deezer`, `youtube`, `soundcloud`) e passa por `pickBestPerSource`, que descarta candidatas sem palavra-chave de extended e com título que não bate. O teste de duração só se aplica **quando as duas durações são conhecidas** — ver a Correção em Bordas. Retorna `Partial<Record<SourceId, TrackMeta>>` — no máximo uma candidata por fonte, só as qualificadas.
 
 O que existe na UI é apenas o consumo **em lote**: o botão "⏱ Buscar versões extended" no cabeçalho do `TrackSelectList` roda `findExtendedAll()`, que percorre a lista inteira com três workers concorrentes.
 
@@ -109,7 +109,9 @@ A lógica pura de extended (`shared/extended.ts`: `isExtendedTitle`, `titleMatch
 O que este trabalho adiciona é estado de componente React, e o projeto não tem infraestrutura de teste de componente (sem `@testing-library`). Duas opções:
 
 - **Seguir a convenção**: validação ao vivo, como nas demais features de UI.
-- **Extrair a reconciliação para função pura** — `reconcileSelection(prevKeys, nextKeys)` e `reconcileCandidates(prev, oldKey, newKey)` em `src/lib/` — e testar por unidade. **Recomendado**: é exatamente a parte com risco de regressão silenciosa (Problema 1), e é lógica pura de mapa/conjunto, sem React.
+- **Extrair a reconciliação para função pura** e testar por unidade. **Recomendado**: é exatamente a parte com risco de regressão silenciosa (Problema 1), e é lógica pura de mapa/conjunto, sem React.
+
+**Implementado assim, com um desvio:** as funções ficaram em `shared/trackListState.ts`, não em `src/lib/`. Motivo: o `vitest.config.ts` só coleta `electron/**` e `shared/**`, então um teste em `src/lib/` não rodaria. Há precedente — `shared/trackFilter.ts` também é consumido só pelo renderer.
 
 Validação ao vivo mínima, por fase:
 
@@ -119,7 +121,7 @@ Validação ao vivo mínima, por fase:
 
 ## Bordas
 
-- Faixa sem `durationSec`: `scoreExtendedCandidate` exige duração maior que a original — sem duração, nenhuma candidata qualifica. Não é regressão (vale hoje no lote), mas com botão por faixa o usuário vê "nada encontrado" e merece saber o porquê.
+- **Correção (2026-08-02):** a versão original desta spec afirmava que faixa sem `durationSec` não teria candidata qualificada. É o contrário. Em `scoreExtendedCandidate`, o teste de duração está sob `if (od && cd)`; sem duração original o fluxo cai no `else if (cd)`, ganha `+5` e **qualifica só pelo nome**. Ou seja, justamente nas faixas sem duração o filtro de tempo desaparece. Tratado na TASK-1633.
 - Buscar duas vezes na mesma faixa: a segunda substitui as candidatas daquela faixa, não acumula.
 - Trocar uma faixa já trocada: a chave muda de novo; a reconciliação precisa aguentar troca encadeada.
 - Faixa enfileirada e depois trocada: a fila já recebeu a original — a troca vale para a próxima vez que for enfileirada, não altera o item na fila.
