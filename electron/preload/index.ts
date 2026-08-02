@@ -64,7 +64,8 @@ const api = {
   removePlaylist: (url: string): Promise<void> => ipcRenderer.invoke(CH.playlistRemove, url),
   syncPlaylist: (url: string): Promise<{ added: number; total: number }> =>
     ipcRenderer.invoke(CH.playlistSync, url),
-  syncAllPlaylists: (): Promise<{ added: number; total: number }> => ipcRenderer.invoke(CH.playlistSyncAll),
+  syncAllPlaylists: (): Promise<{ added: number; total: number; failed: number }> =>
+    ipcRenderer.invoke(CH.playlistSyncAll),
   clearPlaylists: (): Promise<void> => ipcRenderer.invoke(CH.playlistClear),
   clearDownloads: (): Promise<{ ok: boolean; removed?: number; error?: string }> =>
     ipcRenderer.invoke(CH.downloadsClear),

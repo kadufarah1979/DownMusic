@@ -10,12 +10,22 @@ interface PlaylistData {
   subs: PlaylistSubscription[]
 }
 
+/**
+ * A fatia do electron-store que esta classe usa. Injetavel para o teste: fora do
+ * Electron o electron-store grava em `~/.config/electron-store-nodejs/`, e o
+ * estado sobrevive entre execucoes da suite.
+ */
+export interface PlaylistBackend {
+  get(key: 'subs'): PlaylistSubscription[]
+  set(key: 'subs', value: PlaylistSubscription[]): void
+}
+
 /** Persistencia das playlists cadastradas (arquivo playlists.json). */
 export class PlaylistStore {
-  private store: Store<PlaylistData>
+  private store: PlaylistBackend
 
-  constructor() {
-    this.store = new Store<PlaylistData>({ name: 'playlists', defaults: { subs: [] } })
+  constructor(store: PlaylistBackend = new Store<PlaylistData>({ name: 'playlists', defaults: { subs: [] } })) {
+    this.store = store
   }
 
   list(): PlaylistSubscription[] {
@@ -50,6 +60,11 @@ export class PlaylistStore {
 export interface SyncResult {
   added: number
   total: number
+}
+
+/** Resultado de sincronizar todas: inclui quantas playlists falharam. */
+export interface SyncAllResult extends SyncResult {
+  failed: number
 }
 
 /**
@@ -102,15 +117,26 @@ export class PlaylistService {
     return { added: news.length, total: tracks.length }
   }
 
-  /** Sincroniza todas as playlists cadastradas. */
-  async syncAll(): Promise<SyncResult> {
+  /**
+   * Sincroniza todas as playlists cadastradas. Uma playlist morta, privada ou
+   * fora do ar nao pode derrubar as outras: sem o isolamento, a primeira que
+   * rejeita interrompe o laco e ate o que ja tinha sincronizado se perde no
+   * caminho. As falhas sao contadas em vez de engolidas — "0 novas" sem aviso
+   * esconderia que metade das playlists nem foi consultada.
+   */
+  async syncAll(): Promise<SyncAllResult> {
     let added = 0
     let total = 0
+    let failed = 0
     for (const sub of this.list()) {
-      const r = await this.sync(sub.url)
-      added += r.added
-      total += r.total
+      try {
+        const r = await this.sync(sub.url)
+        added += r.added
+        total += r.total
+      } catch {
+        failed++
+      }
     }
-    return { added, total }
+    return { added, total, failed }
   }
 }
