@@ -34,24 +34,61 @@ export interface ScoreInput {
   originalDurationSec?: number
 }
 
+/** Pontuação por passar palavra-chave + relevância de título. */
+const BASE_SCORE = 10
+/** Piso proporcional: abaixo disso é remaster/master com silêncio, não extended. */
+const MIN_RATIO = 1.2
+/** Piso absoluto, para faixas longas em que 1,2x seria exigir minutos a mais. */
+const MIN_GAIN_SEC = 60
+/** Teto: acima disso é DJ set, continuous mix ou megamix contendo a faixa. */
+const MAX_RATIO = 3
+/** Proporção de uma extended típica — onde o bônus é máximo. */
+const PEAK_RATIO = 1.5
+/** Bônus máximo de duração, atingido em `PEAK_RATIO`. */
+const DURATION_BONUS_MAX = 20
+/** Casas decimais da pontuação: sem isso o ruído de ponto flutuante desempata sozinho. */
+const SCORE_PRECISION = 1e4
+
+/**
+ * True quando dá para comparar as durações. Sem uma das duas o candidato
+ * qualifica só pelo nome — a UI precisa avisar que o tempo não foi conferido.
+ */
+export function isDurationVerified(input: ScoreInput, cand: TrackMeta): boolean {
+  return Boolean(input.originalDurationSec && cand.durationSec)
+}
+
+/**
+ * Bônus de duração, ou `null` quando a candidata é reprovada pelo piso (pouco
+ * mais longa) ou pelo teto (desproporcionalmente longa). Cresce até `PEAK_RATIO`
+ * e decresce depois, para uma faixa 3x não valer mais que uma extended típica.
+ */
+function durationBonus(od: number, cd: number): number | null {
+  const ratio = cd / od
+  if (ratio > MAX_RATIO) return null
+  if (ratio < MIN_RATIO && cd - od < MIN_GAIN_SEC) return null
+  const t =
+    ratio <= PEAK_RATIO
+      ? (ratio - 1) / (PEAK_RATIO - 1)
+      : (MAX_RATIO - ratio) / (MAX_RATIO - PEAK_RATIO)
+  return DURATION_BONUS_MAX * Math.max(0, Math.min(1, t))
+}
+
 /**
  * Pontua um candidato como versão extended. Retorna 0 (não qualificado) quando
- * falta palavra-chave, o título não bate, ou a duração não é maior que a original.
+ * falta palavra-chave, o título não bate, ou a duração não passa no piso/teto.
+ * Sem duração dos dois lados fica só com a pontuação base — ver `isDurationVerified`.
  */
 export function scoreExtendedCandidate(input: ScoreInput, cand: TrackMeta): number {
   if (!isExtendedTitle(cand.title)) return 0
   if (!titleMatches(input.originalTitle, cand.title)) return 0
 
-  let score = 10 // passou palavra-chave + relevância
   const od = input.originalDurationSec
   const cd = cand.durationSec
-  if (od && cd) {
-    if (cd <= od) return 0 // extended tem que ser MAIS longa
-    score += Math.min(20, ((cd - od) / od) * 20) // bônus proporcional ao quão mais longa
-  } else if (cd) {
-    score += 5 // sem duração original: pequeno bônus por ter duração conhecida
-  }
-  return score
+  if (!od || !cd) return BASE_SCORE
+
+  const bonus = durationBonus(od, cd)
+  if (bonus === null) return 0
+  return Math.round((BASE_SCORE + bonus) * SCORE_PRECISION) / SCORE_PRECISION
 }
 
 /** Escolhe a melhor candidata extended de cada fonte (apenas as qualificadas). */
