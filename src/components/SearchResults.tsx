@@ -1,10 +1,19 @@
 import { TrackSelectList } from './TrackSelectList'
 import { useDownloadedChecker } from '../lib/downloaded'
 import { platformLabel } from '../lib/platforms'
-import type { SearchGroup } from '@shared/types'
+import type { SearchGroup, TrackMeta } from '@shared/types'
 
 /** Resultados de busca por texto, agrupados por fonte (reaproveitado no Download). */
-export function SearchResults({ groups, outputDir }: { groups: SearchGroup[]; outputDir?: string }) {
+export function SearchResults({
+  groups,
+  outputDir,
+  onReplace
+}: {
+  groups: SearchGroup[]
+  outputDir?: string
+  /** Habilita a busca de versao extended por faixa (e a troca) em cada grupo. */
+  onReplace?: (original: TrackMeta, replacement: TrackMeta) => void
+}) {
   const isDownloaded = useDownloadedChecker()
 
   return (
@@ -19,7 +28,12 @@ export function SearchResults({ groups, outputDir }: { groups: SearchGroup[]; ou
           ) : g.tracks.length === 0 ? (
             <p className="text-sm text-neutral-500">Nenhum resultado.</p>
           ) : (
-            <TrackSelectList tracks={g.tracks} isDownloaded={isDownloaded} outputDir={outputDir} />
+            <TrackSelectList
+              tracks={g.tracks}
+              isDownloaded={isDownloaded}
+              outputDir={outputDir}
+              onReplace={onReplace}
+            />
           )}
         </section>
       ))}
